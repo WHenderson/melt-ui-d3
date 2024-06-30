@@ -1226,6 +1226,8 @@ export function createChart<
                     range_d: $range_d,
                 } satisfies ScaleInputsType<ROW, DOMAINTYPE, RANGETYPE>;
 
+                console.log(props);
+
                 return ($_scaleFactory ?? $_scaleFactory_def)(props as any);
             }
         );
