@@ -52,17 +52,17 @@ export type RangeOption<RANGETYPE> = [RANGETYPE, RANGETYPE, ...RANGETYPE[]] | ((
 
 export type Range<RANGETYPE> = [RANGETYPE, RANGETYPE, ...RANGETYPE[]];
 
-export type ScaleFactoryOrdinal<ROW, DOMAINTYPE, RANGETYPE> = (
+export type ScaleFactoryOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> = (
     props: ScaleInputsTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE>
-) => Scale<DOMAINTYPE, RANGETYPE>;
+) => SCALE;
 
-export type ScaleFactoryScalar<ROW, DOMAINTYPE, RANGETYPE> = (
+export type ScaleFactoryScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> = (
     props: ScaleInputsTypeScalar<ROW, DOMAINTYPE, RANGETYPE>
-) => Scale<DOMAINTYPE, RANGETYPE>;
+) => SCALE;
 
-export type ScaleFactory<ROW, DOMAINTYPE, RANGETYPE> = (
+export type ScaleFactory<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> = (
     props: ScaleInputsType<ROW, DOMAINTYPE, RANGETYPE>
-) => Scale<DOMAINTYPE, RANGETYPE>;
+) => SCALE;
 
 export type MaybeStore<TYPE> = TYPE | Readable<TYPE>;
 
@@ -74,55 +74,55 @@ export type Merge<O,S> = { [k in keyof O | keyof S]: (k extends keyof O ? O[k] :
 
 export type Trump<PRIMARY,SECONDARY> = { [k in keyof PRIMARY | keyof SECONDARY]: (k extends keyof PRIMARY ? PRIMARY[k] : undefined) }
 
-export interface DimensionInputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE> {
+export interface DimensionInputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> {
     ordinal: true,
     accessor: AccessorOption<ROW, DOMAINTYPE>,
     sort?: Sort<DOMAINTYPE>,
     extents?: ExtentsOptionOrdinal<DOMAINTYPE>,
     domain?: DomainOptionOrdinal<DOMAINTYPE>,
     range?: RangeOption<RANGETYPE>,
-    scaleFactory?: ScaleFactoryOrdinal<ROW, DOMAINTYPE, RANGETYPE>
+    scaleFactory?: ScaleFactoryOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE>
 }
 
-export interface DimensionInputTypeScalar<ROW, DOMAINTYPE, RANGETYPE> {
+export interface DimensionInputTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> {
     ordinal?: false,
     accessor: AccessorOption<ROW, DOMAINTYPE>,
     extents?: ExtentsOptionScalar<DOMAINTYPE>,
     extentDefault?: DOMAINTYPE,
     domain?: DomainOptionScalar<DOMAINTYPE>,
     range?: RangeOption<RANGETYPE>,
-    scaleFactory?: ScaleFactoryScalar<ROW, DOMAINTYPE, RANGETYPE>
+    scaleFactory?: ScaleFactoryScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>
 }
 
-export interface DimensionDerivedTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE> {
+export interface DimensionDerivedTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> {
     accessor_d: Accessor<ROW, DOMAINTYPE>,
     extents_d: ExtentsOrdinal<DOMAINTYPE>,
     domain_d: DomainOrdinal<DOMAINTYPE>,
     range_d: Range<RANGETYPE>
-    scale_d: Scale<DOMAINTYPE, RANGETYPE>,
+    scale_d: SCALE,
     scaled_d: Scaler<ROW, RANGETYPE>,
 }
 
-export interface DimensionDerivedTypeScalar<ROW, DOMAINTYPE, RANGETYPE> {
+export interface DimensionDerivedTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> {
     accessor_d: Accessor<ROW, DOMAINTYPE>,
     extents_d: ExtentsScalar<DOMAINTYPE>,
     domain_d: DomainScalar<DOMAINTYPE>,
     range_d: Range<RANGETYPE>,
-    scale_d: Scale<DOMAINTYPE, RANGETYPE>,
+    scale_d: SCALE,
     scaled_d: Scaler<ROW, RANGETYPE>,
 }
 
-export type DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE> = DimensionInputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE> & DimensionDerivedTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE>;
+export type DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> = DimensionInputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE> & DimensionDerivedTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE>;
 
-export type DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE> = DimensionInputTypeScalar<ROW, DOMAINTYPE, RANGETYPE> & DimensionDerivedTypeScalar<ROW, DOMAINTYPE, RANGETYPE>;
+export type DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> = DimensionInputTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE> & DimensionDerivedTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>;
 
-export type DimensionInputOrdinal<ROW, DOMAINTYPE, RANGETYPE> = AsMaybeStores<DimensionInputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE>>;
+export type DimensionInputOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> = AsMaybeStores<DimensionInputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE>>;
 
-export type DimensionInputScalar<ROW, DOMAINTYPE, RANGETYPE> = AsMaybeStores<DimensionInputTypeScalar<ROW, DOMAINTYPE, RANGETYPE>>;
+export type DimensionInputScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> = AsMaybeStores<DimensionInputTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>>;
 
-export type DimensionOutputOrdinal<ROW, DOMAINTYPE, RANGETYPE>  = AsStores<Trump<DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE>, DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE>>>;
+export type DimensionOutputOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>>  = AsStores<Trump<DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE>, DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>>>;
 
-export type DimensionOutputScalar<ROW, DOMAINTYPE, RANGETYPE> = AsStores<Trump<DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE>, DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE>>>;
+export type DimensionOutputScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>> = AsStores<Trump<DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>, DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE>>>;
 
 
 export type ScaleInputsKeysOrdinal =
@@ -154,7 +154,57 @@ export type ScaleInputsTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE> =
         data: ROW[],
         width: number,
         height: number,
-    } &
+
+        ordinal: true,
+        accessor: AccessorOption<ROW, DOMAINTYPE>,
+        sort: undefined | Sort<DOMAINTYPE>,
+        extents: undefined | ExtentsOptionOrdinal<DOMAINTYPE>,
+        extentDefault: undefined,
+        domain: undefined | DomainOptionOrdinal<DOMAINTYPE>,
+        range: undefined | RangeOption<RANGETYPE>,
+
+        accessor_d: Accessor<ROW, DOMAINTYPE>,
+        extents_d: ExtentsOrdinal<DOMAINTYPE>,
+        domain_d: DomainOrdinal<DOMAINTYPE>,
+        range_d: Range<RANGETYPE>
+
+      /*
+	// DimensionInputTypeOrdinal
+	ordinal: true,
+	accessor: AccessorOption<ROW, DOMAINTYPE>,
+	sort?: Sort<DOMAINTYPE>,
+	extents?: ExtentsOptionOrdinal<DOMAINTYPE>,
+	domain?: DomainOptionOrdinal<DOMAINTYPE>,
+	range?: RangeOption<RANGETYPE>,
+	scaleFactory?: ScaleFactoryOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE>
+
+	// DimensionDerivedTypeOrdinal
+	accessor_d: Accessor<ROW, DOMAINTYPE>,
+	extents_d: ExtentsOrdinal<DOMAINTYPE>,
+	domain_d: DomainOrdinal<DOMAINTYPE>,
+	range_d: Range<RANGETYPE>
+	scale_d: SCALE,
+	scaled_d: Scaler<ROW, RANGETYPE>,
+
+	// DimensionInputTypeScalar
+	ordinal?: false,
+	accessor: AccessorOption<ROW, DOMAINTYPE>,
+	extents?: ExtentsOptionScalar<DOMAINTYPE>,
+	extentDefault?: DOMAINTYPE,
+	domain?: DomainOptionScalar<DOMAINTYPE>,
+	range?: RangeOption<RANGETYPE>,
+	scaleFactory?: ScaleFactoryScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>
+
+	// DimensionDerivedTypeScalar
+	accessor_d: Accessor<ROW, DOMAINTYPE>,
+	extents_d: ExtentsScalar<DOMAINTYPE>,
+	domain_d: DomainScalar<DOMAINTYPE>,
+	range_d: Range<RANGETYPE>,
+	scale_d: SCALE,
+	scaled_d: Scaler<ROW, RANGETYPE>,
+			 */
+
+    } /*&
     Trump<
         Pick<
             DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE>,
@@ -164,14 +214,27 @@ export type ScaleInputsTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE> =
             DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE>,
             ScaleInputsKeysScalar
         >
-    >;
+    >;*/
 
 export type ScaleInputsTypeScalar<ROW, DOMAINTYPE, RANGETYPE> =
     {
         data: ROW[],
         width: number,
         height: number,
-    } &
+
+        ordinal: undefined | false,
+        accessor: AccessorOption<ROW, DOMAINTYPE>,
+        sort: undefined,
+        extents: undefined | ExtentsOptionScalar<DOMAINTYPE>,
+        extentDefault: undefined | DOMAINTYPE,
+        domain: undefined | DomainOptionScalar<DOMAINTYPE>,
+        range: undefined | RangeOption<RANGETYPE>,
+
+        accessor_d: Accessor<ROW, DOMAINTYPE>,
+        extents_d: ExtentsScalar<DOMAINTYPE>,
+        domain_d: DomainScalar<DOMAINTYPE>,
+        range_d: Range<RANGETYPE>,
+    } /*&
     Trump<
         Pick<
             DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE>,
@@ -181,29 +244,33 @@ export type ScaleInputsTypeScalar<ROW, DOMAINTYPE, RANGETYPE> =
             DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE>,
             ScaleInputsKeysOrdinal
         >
-    >;
+    >;*/
 
 export type ScaleInputsType<ROW, DOMAINTYPE, RANGETYPE> = Omit<ScaleInputsTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE> | ScaleInputsTypeScalar<ROW, DOMAINTYPE, RANGETYPE>, 'ordinal'> & { ordinal: boolean }
 
 
 export interface ChartProps<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE,
-    YRANGETYPE,
-    ZRANGETYPE,
-    RRANGETYPE
+  ROW,
+  XDOMAINTYPE,
+  YDOMAINTYPE,
+  ZDOMAINTYPE,
+  RDOMAINTYPE,
+  XRANGETYPE,
+  YRANGETYPE,
+  ZRANGETYPE,
+  RRANGETYPE,
+  XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE>,
+  YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE>,
+  ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE>,
+  RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE>,
 > {
     data: MaybeStore<ROW[]>,
     width: MaybeStore<number>,
     height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE> | DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE> | DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE>,
-    z?: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE> | DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE>,
-    r?: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE> | DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE>,
+    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE> | DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
+    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE> | DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
+    z?: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE> | DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
+    r?: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE> | DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
 }
 
 // TODO: replace { options, derived } with { ..options, ...options_d }

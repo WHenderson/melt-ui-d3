@@ -19,24 +19,29 @@
 				ordinal: true,
 				accessor: (row) => row.year,
 				sort: ascending,
-				scaleFactory: ({ domain_d, range_d }) => scaleBand().domain(domain_d).range(range_d).paddingInner(0.028).round(true)
+				range: [1, 599],
+				//scaleFactory: ({ domain_d, range_d }) => (scaleBand().domain(domain_d).range(range_d).paddingInner(0.028).round(true) as any)
 			},
 			y: {
 				accessor: (row) => row.apples,
 				domain: [0, null],
+				range: [1, 399],
 				scaleFactory: ({ domain_d, range_d }) => scaleLinear().domain(domain_d).range([...range_d].reverse())
 			}
 		}
 	);
 
-	const { width, height, x: { scaled_d: xGetScaled, scale_d: xGetScale }, y: { scaled_d: yGetScaled, scale_d: yGetScale } } = chart;
+	const { width, height, x: { scaled_d: xGetScaled, scale_d: xGetScale }, y: { scaled_d: yGetScaled, scale_d: yGetScale, range_d: xRange } } = chart;
 
+	$: console.log('xRange', $xRange);
 
 	/*
-	TODO: Y coordinates need to be inverted somewhere.. I think? - e.g. a value of 0 should have a short column not a tall one.
-	TODO: Create a vanilla stack chart in layercake and see what the diff is
-	TODO: Simplify the scaleFactory prop type such that the syntax help is simpler
-	TODO: Should return the scale type
+	TODO: [y] Y coordinates need to be inverted somewhere.. I think? - e.g. a value of 0 should have a short column not a tall one.
+	TODO: [y] Create a vanilla stack chart in layercake and see what the diff is
+	TODO: [y] Simplify the scaleFactory prop type such that the syntax help is simpler
+	TODO: [y] Should return the scale type
+	TODO: [ ] Add option to reverse the range (default to true on the y coordinate)
+	TODO: [ ] Work out how to ensure custom scales work easily on ordinal scale factories
 	 */
 </script>
 <div class="w-[600px] h-[400px]">
