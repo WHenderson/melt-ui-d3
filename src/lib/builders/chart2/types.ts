@@ -1,5 +1,4 @@
 import type { Readable, Writable } from 'svelte/store';
-import type { AsStores, MaybeStore } from '$lib';
 import { type scaleFactoryBand, scaleFactoryLinear } from './scale.js';
 import { type NumberValue, type ScaleBand, scaleLinear, type ScaleLinear } from 'd3-scale';
 
@@ -32,7 +31,7 @@ export type AccessorOutput<ROW, DOMAINTYPE> =
 	AccessorOutputMany<ROW, DOMAINTYPE> |
 	AccessorOutputOne<ROW, DOMAINTYPE>;
 
-type InferDomainType<ROW, ACCESSOR> =
+export type InferDomainType<ROW, ACCESSOR> =
 	ACCESSOR extends keyof ROW
 		? ROW[ACCESSOR]
 		: ACCESSOR extends (row: ROW) => infer RETURN
@@ -43,7 +42,7 @@ type InferDomainType<ROW, ACCESSOR> =
 				)
 			: never;
 
-type InferAccessorOutput<ROW, ACCESSOR> =
+export type InferAccessorOutput<ROW, ACCESSOR> =
 	ACCESSOR extends keyof ROW
 		? (
 			ROW[ACCESSOR] extends (infer DOMAINTYPE)[]
@@ -151,7 +150,7 @@ export interface ScalerFactoryProps<ROW, DOMAINTYPE, RANGETYPE> {
 export type ScalerFactory<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
 	(props: ScalerFactoryProps<ROW, DOMAINTYPE, RANGETYPE>) => SCALER
 
-type DimensionInput<
+export type DimensionInput<
 	ROW,
 	ACCESSOR extends AccessorInput<ROW, unknown>,
 	ORDINAL extends boolean,
@@ -183,7 +182,7 @@ type DimensionInput<
 			}
 	)
 
-type DimensionOutput<
+export type DimensionOutput<
 	ROW,
 	ACCESSOR extends AccessorInput<ROW, unknown>,
 	ORDINAL extends boolean,
@@ -200,39 +199,7 @@ type DimensionOutput<
 		scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
 	}
 
-declare function createChart<
-	ROW,
-
-	XACCESSOR extends AccessorInput<ROW, unknown>,
-	XORDINAL extends boolean,
-	XRANGETYPE = number,
-	XSCALER extends Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, XRANGETYPE> = (
-		XRANGETYPE extends number
-			? (
-			[XORDINAL] extends [true]
-				? (
-					InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>> extends StringValue
-						? Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, XRANGETYPE> & ScaleBand<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>>
-						: never
-					)
-				: (
-					InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>> extends NumberValue
-						? Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, XRANGETYPE> & ScaleLinear<number, number, never>
-						: never
-					)
-			)
-			: never
-		)
-
-
->(props: {
-	data: ROW[],
-	width: number,
-	height: number,
-	x: DimensionInput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>
-}) : {
-	x: DimensionOutput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>
-};
+	/*
 
 
 // todo
@@ -265,10 +232,10 @@ const result = createChart({
 		//domain: [1,2,3]
 		//domain: ['x', null]
 	},
-	//y: {
-	//	ordinal: true,
-	//	accessor: (row) => [row.apples, row.apples]
-	//}
+	y: {
+		ordinal: true,
+		accessor: (row) => [row.apples, row.apples]
+	}
 });
 
 type R = typeof result;
@@ -322,3 +289,4 @@ const s = scaleFactoryLinear({
 s(1);
 s('x');
 
+*/
