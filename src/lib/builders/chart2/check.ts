@@ -50,3 +50,10 @@ const rdata: Row[] = ndata;
 	type HasDefaultXScaler = Assert<Contains<typeof result.x.scaler_d, 'bandwidth'>, true>;
 	type HasDefaultYScaler = Assert<Contains<typeof result.y.scaler_d, 'interpolate'>, true>;
 }
+
+// todo
+// [y] Option for reversing range
+// [x] make chartFactory dependencies keyed
+// [y] Default scale types should be exposed in return
+// [ ] Default scale types (in implementation)
+// [ ] add meta(data)
