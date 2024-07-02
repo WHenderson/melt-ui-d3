@@ -203,50 +203,37 @@ type DimensionOutput<
 declare function createChart<
 	ROW,
 
-	XACCESSOR extends AccessorInput<ROW, unknown>, XORDINAL extends boolean,
-	//XSCALER extends Scaler<InferDomainType<NoInfer<ROW>, XACCESSOR>, XRANGETYPE>,
-	//XRANGETYPE = number,
-	XSCALER extends Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, number> = (
+	XACCESSOR extends AccessorInput<ROW, unknown>,
+	XORDINAL extends boolean,
+	XRANGETYPE = number,
+	XSCALER extends Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, XRANGETYPE> = (
+		XRANGETYPE extends number
+			? (
 			[XORDINAL] extends [true]
 				? (
 					InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>> extends StringValue
-						? Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, number> & ScaleBand<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>>
+						? Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, XRANGETYPE> & ScaleBand<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>>
 						: never
 					)
 				: (
 					InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>> extends NumberValue
-						? Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, number> & ScaleLinear<number, number, never>
+						? Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, XRANGETYPE> & ScaleLinear<number, number, never>
 						: never
 					)
 			)
+			: never
+		)
+
 
 >(props: {
 	data: ROW[],
 	width: number,
 	height: number,
-	x: DimensionInput<ROW, XACCESSOR, XORDINAL, number, XSCALER>
+	x: DimensionInput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>
 }) : {
-	x: DimensionOutput<ROW, XACCESSOR, XORDINAL, number, XSCALER>
+	x: DimensionOutput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>
 };
-/*
-(
-		XRANGETYPE extends number
-			? (
-				[XORDINAL] extends [true]
-					? (
-						InferDomainType<NoInfer<ROW>, XACCESSOR> extends StringValue
-							? ReturnType<typeof scaleFactoryBand<InferDomainType<NoInfer<ROW>, XACCESSOR>, ROW>>
-							: never
-					)
-					: (
-						InferDomainType<NoInfer<ROW>, XACCESSOR> extends NumberValue
-							? ReturnType<typeof scaleFactoryLinear<InferDomainType<NoInfer<ROW>, XACCESSOR>, ROW>>
-							: never
-					)
-			)
-			: never
-	)
- */
+
 
 // todo
 // [y] Option for reversing range
