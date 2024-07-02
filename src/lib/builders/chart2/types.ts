@@ -200,36 +200,33 @@ interface DimensionOutput<ROW, ACCESSOR extends AccessorInput<ROW, unknown>, RAN
 	scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
 }
 
-interface DimensionGeneric<ROW, ACCESSOR extends AccessorInput<NoInfer<ROW>, unknown>, RANGETYPE, SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>> {
-	accessor: ACCESSOR,
+interface DimensionGeneric<DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> {
+	domainType: DOMAINTYPE,
 	rangeType: RANGETYPE,
 	scaler: SCALER
 }
 
 declare function createChart<
 	ROW,
-	//XACCESSOR extends AccessorInput<NoInfer<ROW>, unknown>, XRANGETYPE, XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE>,
-	//X extends DimensionInput<NoInfer<ROW>, any, any, any>,
-	X extends DimensionGeneric<NoInfer<ROW>, any, any, any>,
-	//Y extends DimensionGeneric<unknown, unknown, never>,
-	//Z extends DimensionGeneric<unknown, unknown, never>,
-	//R extends DimensionGeneric<unknown, unknown, never>
+	XACCESSOR extends AccessorInput<NoInfer<ROW>, unknown>, XRANGETYPE, XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE>,
+	//X extends DimensionInput<NoInfer<ROW>, any, any, any, any>,
+	Y extends DimensionGeneric<unknown, unknown, never>,
+	Z extends DimensionGeneric<unknown, unknown, never>,
+	R extends DimensionGeneric<unknown, unknown, never>
 >(props: {
 	data: ROW[],
 	width: number,
 	height: number,
-	//x: DimensionInput<NoInfer<ROW>, XACCESSOR, XRANGETYPE, XSCALER>
+	x: DimensionInput<NoInfer<ROW>, XACCESSOR, XRANGETYPE, XSCALER>
 	//x: X
-	x: DimensionInput<NoInfer<ROW>, X['accessor'], X['rangeType'], X['scaler']>
 	//y?: DimensionInput<NoInfer<ROW>, Y['domainType'], Y['rangeType'], Y['scaler']>,
 	//z?: DimensionInput<NoInfer<ROW>, ZDOMAINTYPE, ZRANGETYPE, ZSCALER>,
 	//r?: DimensionInput<NoInfer<ROW>, RDOMAINTYPE, RRANGETYPE, RSCALER>
 }) : {
-	//x: DimensionOutput<ROW, XACCESSOR, XRANGETYPE, XSCALER>
-	//x: X extends DimensionInput<ROW, infer ACCESSOR, infer RANGETYPE, infer SCALER>
-	//	 ? DimensionOutput<ROW, ACCESSOR, RANGETYPE, SCALER>
+	x: DimensionOutput<ROW, XACCESSOR, XRANGETYPE, XSCALER>
+	//x: X extends DimensionInput<ROW, infer DOMAIN, infer ACCESSOR, infer RANGETYPE, infer SCALER>
+	//	 ? DimensionOutput<ROW, DOMAIN, ACCESSOR, RANGETYPE, SCALER>
 	//	 : never
-	x: DimensionOutput<ROW, X['accessor'], X['rangeType'], X['scaler']>
 };
 
 // are individual signatures the only real way to handle string (member) based accessors?
