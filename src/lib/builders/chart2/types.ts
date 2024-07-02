@@ -192,12 +192,23 @@ export type DimensionOutput<
 	DimensionInput<ROW, ACCESSOR, ORDINAL, RANGETYPE, SCALER> &
 	{
 		accessor_d: InferAccessorOutput<ROW, ACCESSOR>,
-		extents_d: ExtentsOutput<InferDomainType<ROW, ACCESSOR>>,
-		domain_d: DomainOutput<InferDomainType<ROW, ACCESSOR>>,
 		range_d: RangeOutput<RANGETYPE>,
 		scaler_d: SCALER,
 		scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
-	}
+	} &
+	(
+	[ORDINAL] extends [true]
+		? {
+			extents_d: ExtentsOutputOrdinal<InferDomainType<ROW, ACCESSOR>>,
+			domain_d: DomainOutputOrdinal<InferDomainType<ROW, ACCESSOR>>,
+
+		}
+		: {
+			extents_d: ExtentsOutputScalar<InferDomainType<ROW, ACCESSOR>>,
+			domain_d: DomainOutputScalar<InferDomainType<ROW, ACCESSOR>>,
+		}
+	)
+
 
 	/*
 
