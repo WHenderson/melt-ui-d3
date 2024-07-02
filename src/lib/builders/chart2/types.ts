@@ -106,6 +106,7 @@ export interface ScalerFactoryPropsScalar<ROW, DOMAINTYPE, RANGETYPE> {
 	extentDefault: undefined | DOMAINTYPE,
 	domain: undefined | DomainInputScalar<DOMAINTYPE>,
 	range: undefined | RangeInput<RANGETYPE>,
+	reverse: boolean,
 	accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
 	extents_d: ExtentsOutputScalar<DOMAINTYPE>,
 	domain_d: DomainOutputScalar<DOMAINTYPE>,
@@ -125,6 +126,7 @@ export interface ScalerFactoryPropsOrdinal<ROW, DOMAINTYPE, RANGETYPE> {
 	extents: undefined | ExtentsInputOrdinal<DOMAINTYPE>,
 	domain: undefined | DomainInputOrdinal<DOMAINTYPE>,
 	range: undefined | RangeInput<RANGETYPE>,
+	reverse: boolean,
 	accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
 	extents_d: ExtentsOutputOrdinal<DOMAINTYPE>,
 	domain_d: DomainOutputOrdinal<DOMAINTYPE>,
@@ -145,6 +147,7 @@ export interface ScalerFactoryProps<ROW, DOMAINTYPE, RANGETYPE> {
 	extentDefault: undefined | DOMAINTYPE,
 	domain: undefined | DomainInput<DOMAINTYPE>,
 	range: undefined | RangeInput<RANGETYPE>,
+	reverse: boolean,
 	accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
 	extents_d: ExtentsOutput<DOMAINTYPE>,
 	domain_d: DomainOutput<DOMAINTYPE>,
@@ -180,18 +183,31 @@ type InferAccessorOutput<ROW, ACCESSOR> =
 				)
 			: never;
 
-interface DimensionInput<ROW, ACCESSOR extends AccessorInput<ROW, unknown>, RANGETYPE, SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>> {
-	ordinal?: boolean,
+interface DimensionInput<
+	ROW,
+	ACCESSOR extends AccessorInput<ROW, unknown>,
+	ORDINAL,
+	RANGETYPE,
+	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
+> {
+	ordinal?: ([ORDINAL] extends [true] ? true : false | undefined),
 	accessor: ACCESSOR,
-	sort?: CompareFunc<InferDomainType<ROW, ACCESSOR>>,
-	extents?: ExtentsInput<InferDomainType<ROW, ACCESSOR>>,
-	extentDefault?: InferDomainType<ROW, ACCESSOR>
-	domain?: DomainInput<InferDomainType<ROW, ACCESSOR>>,
+	sort?: (ORDINAL extends true ? CompareFunc<InferDomainType<ROW, ACCESSOR>> : undefined),
+	extents?: (ORDINAL extends true ? ExtentsInputOrdinal<InferDomainType<ROW, ACCESSOR>> : ExtentsInputScalar<InferDomainType<ROW, ACCESSOR>>),
+	extentDefault?: (ORDINAL extends true ? undefined : InferDomainType<ROW, ACCESSOR>)
+	domain?: (ORDINAL extends true ? DomainInputOrdinal<InferDomainType<ROW, ACCESSOR>> : DomainInputScalar<InferDomainType<ROW, ACCESSOR>>),
 	range?: RangeInput<RANGETYPE>,
-	scalerFactory?: ScalerFactory<ROW, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>,
+	reverse?: boolean,
+	scalerFactory?: (ORDINAL extends true ? ScalerFactoryOrdinal<ROW, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER> : ScalerFactoryScalar<ROW, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>),
 }
 
-interface DimensionOutput<ROW, ACCESSOR extends AccessorInput<ROW, unknown>, RANGETYPE, SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>> extends DimensionInput<ROW, ACCESSOR, RANGETYPE, SCALER> {
+interface DimensionOutput<
+	ROW,
+	ACCESSOR extends AccessorInput<ROW, unknown>,
+	ORDINAL,
+	RANGETYPE,
+	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
+> extends DimensionInput<ROW, ACCESSOR, ORDINAL, RANGETYPE, SCALER> {
 	accessor_d: InferAccessorOutput<ROW, ACCESSOR>,
 	extents_d: ExtentsOutput<InferDomainType<ROW, ACCESSOR>>,
 	domain_d: DomainOutput<InferDomainType<ROW, ACCESSOR>>,
@@ -200,38 +216,26 @@ interface DimensionOutput<ROW, ACCESSOR extends AccessorInput<ROW, unknown>, RAN
 	scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
 }
 
-interface DimensionGeneric<DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> {
-	domainType: DOMAINTYPE,
-	rangeType: RANGETYPE,
-	scaler: SCALER
-}
-
 declare function createChart<
 	ROW,
-	XACCESSOR extends AccessorInput<NoInfer<ROW>, unknown>, XRANGETYPE, XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE>,
-	//X extends DimensionInput<NoInfer<ROW>, any, any, any, any>,
-	Y extends DimensionGeneric<unknown, unknown, never>,
-	Z extends DimensionGeneric<unknown, unknown, never>,
-	R extends DimensionGeneric<unknown, unknown, never>
+	XACCESSOR extends AccessorInput<ROW, unknown>, XORDINAL extends boolean, XRANGETYPE, XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE>,
+
 >(props: {
 	data: ROW[],
 	width: number,
 	height: number,
-	x: DimensionInput<NoInfer<ROW>, XACCESSOR, XRANGETYPE, XSCALER>
-	//x: X
-	//y?: DimensionInput<NoInfer<ROW>, Y['domainType'], Y['rangeType'], Y['scaler']>,
-	//z?: DimensionInput<NoInfer<ROW>, ZDOMAINTYPE, ZRANGETYPE, ZSCALER>,
-	//r?: DimensionInput<NoInfer<ROW>, RDOMAINTYPE, RRANGETYPE, RSCALER>
+	x: DimensionInput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>
 }) : {
-	x: DimensionOutput<ROW, XACCESSOR, XRANGETYPE, XSCALER>
-	//x: X extends DimensionInput<ROW, infer DOMAIN, infer ACCESSOR, infer RANGETYPE, infer SCALER>
-	//	 ? DimensionOutput<ROW, DOMAIN, ACCESSOR, RANGETYPE, SCALER>
-	//	 : never
+	x: DimensionOutput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>
 };
 
-// are individual signatures the only real way to handle string (member) based accessors?
-// x * y * z * r = 2 * 2 * 3 * 3 = 36 <= scalar vs ordinal
-// 2x * 2y * 2z *2r = 4 * 4 * 6 * 6 = 576 <= scalar vs orginal in both string member and accessor... and then there's still accessorOne vs accessorMany...
+// todo
+// [y] Option for reversing range
+// [ ] make chartFactory dependencies keyed
+// [ ] Default scale types
+// [ ] Default scale types should be exposed in return
+
+// testing
 
 type Row = { year: string, apples: number };
 const data : Row[] = [
@@ -245,10 +249,13 @@ const result = createChart({
 	width: 100,
 	height: 100,
 	x: {
-		ordinal: true,
+		//ordinal: true,
 		accessor: row => row.year,
 		//accessor: 'year'
-		//accessor: 'other'
+		//accessor: 'other',
+		//domain: ['x', 'y', 'z']
+		//domain: [1,2,3]
+		domain: ['x', null]
 	},
 	//y: {
 	//	ordinal: true,
@@ -258,6 +265,12 @@ const result = createChart({
 
 type R = typeof result;
 type X = R['x'];
+
+const xordinal = result.x.ordinal;
+
+const xdomain = result.x.domain;
+
+const xdomain_d = result.x.domain_d;
 
 type XAccessor = R['x']['accessor'];
 const xaccessor: XAccessor = result.x.accessor;
