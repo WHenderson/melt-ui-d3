@@ -156,30 +156,47 @@ export type ScalerFactory<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMA
 
 type InferDomainType<ROW, ACCESSOR> =
 	ACCESSOR extends keyof ROW
-		? 1 //ROW[ACCESSOR]
-		: ACCESSOR extends (row: ROW) => (infer DOMAINTYPE)[]
-		? 2 //DOMAINTYPE
-		: ACCESSOR extends (row: ROW) => (infer DOMAINTYPE)
-		? 3 //DOMAINTYPE
-		: 4; //never;
+		? ROW[ACCESSOR]
+		: ACCESSOR extends (row: ROW) => infer RETURN
+		? (
+			RETURN extends (infer DOMAINTYPE)[]
+			? DOMAINTYPE
+			: RETURN
+		)
+		: never;
 
-interface DimensionInput<ROW, DOMAINTYPE, ACCESSOR extends AccessorInput<ROW, DOMAINTYPE>, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> {
+type InferAccessorOutput<ROW, ACCESSOR> =
+	ACCESSOR extends keyof ROW
+		? (
+			ROW[ACCESSOR] extends (infer DOMAINTYPE)[]
+			? AccessorOutputMany<ROW, DOMAINTYPE>
+			: AccessorOutputOne<ROW, ROW[ACCESSOR]>
+		)
+		: ACCESSOR extends (row: ROW) => infer RETURN
+			? (
+				RETURN extends (infer DOMAINTYPE)[]
+					? AccessorOutputMany<ROW, DOMAINTYPE>
+					: AccessorOutputOne<ROW, RETURN>
+				)
+			: never;
+
+interface DimensionInput<ROW, ACCESSOR extends AccessorInput<ROW, unknown>, RANGETYPE, SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>> {
 	ordinal?: boolean,
 	accessor: ACCESSOR,
-	sort?: CompareFunc<DOMAINTYPE>,
-	extents?: ExtentsInput<DOMAINTYPE>,
-	extentDefault?: DOMAINTYPE
-	domain?: DomainInput<DOMAINTYPE>,
+	sort?: CompareFunc<InferDomainType<ROW, ACCESSOR>>,
+	extents?: ExtentsInput<InferDomainType<ROW, ACCESSOR>>,
+	extentDefault?: InferDomainType<ROW, ACCESSOR>
+	domain?: DomainInput<InferDomainType<ROW, ACCESSOR>>,
 	range?: RangeInput<RANGETYPE>,
-	scalerFactory?: ScalerFactory<ROW, DOMAINTYPE, RANGETYPE, SCALER>,
+	scalerFactory?: ScalerFactory<ROW, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>,
 }
 
-interface DimensionOutput<ROW, DOMAINTYPE, ACCESSOR extends AccessorInput<ROW, DOMAINTYPE>, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> extends DimensionInput<ROW, DOMAINTYPE, ACCESSOR, RANGETYPE, SCALER> {
-	accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
-	extents_d: ExtentsOutput<DOMAINTYPE>,
-	domain_d: DomainOutput<DOMAINTYPE>,
+interface DimensionOutput<ROW, ACCESSOR extends AccessorInput<ROW, unknown>, RANGETYPE, SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>> extends DimensionInput<ROW, ACCESSOR, RANGETYPE, SCALER> {
+	accessor_d: InferAccessorOutput<ROW, ACCESSOR>,
+	extents_d: ExtentsOutput<InferDomainType<ROW, ACCESSOR>>,
+	domain_d: DomainOutput<InferDomainType<ROW, ACCESSOR>>,
 	range_d: RangeOutput<RANGETYPE>,
-	scaler_d: Scaler<DOMAINTYPE, RANGETYPE>,
+	scaler_d: Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>,
 	scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
 }
 
@@ -191,7 +208,7 @@ interface DimensionGeneric<DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTY
 
 declare function createChart<
 	ROW,
-	XDOMAINTYPE, XACCESSOR extends AccessorInput<NoInfer<ROW>, XDOMAINTYPE>, XRANGETYPE, XSCALER extends Scaler<XDOMAINTYPE, XRANGETYPE>,
+	XACCESSOR extends AccessorInput<NoInfer<ROW>, unknown>, XRANGETYPE, XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE>,
 	//X extends DimensionInput<NoInfer<ROW>, any, any, any, any>,
 	Y extends DimensionGeneric<unknown, unknown, never>,
 	Z extends DimensionGeneric<unknown, unknown, never>,
@@ -200,13 +217,13 @@ declare function createChart<
 	data: ROW[],
 	width: number,
 	height: number,
-	x: DimensionInput<NoInfer<ROW>, XDOMAINTYPE, XACCESSOR, XRANGETYPE, XSCALER>
+	x: DimensionInput<NoInfer<ROW>, XACCESSOR, XRANGETYPE, XSCALER>
 	//x: X
 	//y?: DimensionInput<NoInfer<ROW>, Y['domainType'], Y['rangeType'], Y['scaler']>,
 	//z?: DimensionInput<NoInfer<ROW>, ZDOMAINTYPE, ZRANGETYPE, ZSCALER>,
 	//r?: DimensionInput<NoInfer<ROW>, RDOMAINTYPE, RRANGETYPE, RSCALER>
 }) : {
-	x: DimensionOutput<ROW, XDOMAINTYPE, XACCESSOR, XRANGETYPE, XSCALER>
+	x: DimensionOutput<ROW, XACCESSOR, XRANGETYPE, XSCALER>
 	//x: X extends DimensionInput<ROW, infer DOMAIN, infer ACCESSOR, infer RANGETYPE, infer SCALER>
 	//	 ? DimensionOutput<ROW, DOMAIN, ACCESSOR, RANGETYPE, SCALER>
 	//	 : never
@@ -241,11 +258,15 @@ const result = createChart({
 
 type R = typeof result;
 type X = R['x'];
+
 type XAccessor = R['x']['accessor'];
-
 const xaccessor: XAccessor = result.x.accessor;
-
 const x0 = xaccessor(data[0]);
 const xfail = xaccessor({ unrelated: true });
 
 type XAccessorD = R['x']['accessor_d'];
+const xaccessor_d: XAccessorD = result.x.accessor_d;
+const x0d = xaccessor_d(data[0]);
+const xfaild = xaccessor_d({ unrelated: true });
+
+
