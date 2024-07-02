@@ -1,7 +1,7 @@
 import type { Readable, Writable } from 'svelte/store';
 import type { AsStores, MaybeStore } from '$lib';
 import { type scaleFactoryBand, scaleFactoryLinear } from './scale.js';
-import { type NumberValue, scaleLinear, type ScaleLinear } from 'd3-scale';
+import { type NumberValue, type ScaleBand, scaleLinear, type ScaleLinear } from 'd3-scale';
 
 export type Map2OptionalStore<TYPE> = { [k in keyof TYPE] : k extends 'ordinal' ? TYPE[k] : TYPE[k] | Readable<TYPE[k]> }
 export type Map2Stores<TYPE> = { [k in keyof TYPE] : k extends 'ordinal' ? TYPE[k] : Readable<TYPE[k]> }
@@ -154,11 +154,11 @@ export type ScalerFactory<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMA
 interface DimensionInput<
 	ROW,
 	ACCESSOR extends AccessorInput<ROW, unknown>,
-	ORDINAL,
+	ORDINAL extends boolean,
 	RANGETYPE,
 	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
 > {
-	ordinal?: ([ORDINAL] extends [true] ? true : false | undefined),
+	ordinal?: ORDINAL, //([ORDINAL] extends [true] ? true : false | undefined),
 	accessor: ACCESSOR,
 	sort?: (ORDINAL extends true ? CompareFunc<InferDomainType<ROW, ACCESSOR>> : undefined),
 	extents?: (ORDINAL extends true ? ExtentsInputOrdinal<InferDomainType<ROW, ACCESSOR>> : ExtentsInputScalar<InferDomainType<ROW, ACCESSOR>>),
@@ -172,7 +172,7 @@ interface DimensionInput<
 interface DimensionOutput<
 	ROW,
 	ACCESSOR extends AccessorInput<ROW, unknown>,
-	ORDINAL,
+	ORDINAL extends boolean,
 	RANGETYPE,
 	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
 > extends DimensionInput<ROW, ACCESSOR, ORDINAL, RANGETYPE, SCALER> {
@@ -180,16 +180,40 @@ interface DimensionOutput<
 	extents_d: ExtentsOutput<InferDomainType<ROW, ACCESSOR>>,
 	domain_d: DomainOutput<InferDomainType<ROW, ACCESSOR>>,
 	range_d: RangeOutput<RANGETYPE>,
-	scaler_d: Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>,
+	scaler_d: SCALER,
 	scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
 }
 
 declare function createChart<
 	ROW,
-	XACCESSOR extends AccessorInput<ROW, unknown>, XORDINAL extends boolean,
+	XDOMAIN,
+	XACCESSOR extends AccessorInput<ROW, XDOMAIN>, XORDINAL extends boolean,
+	//XSCALER extends Scaler<InferDomainType<NoInfer<ROW>, XACCESSOR>, XRANGETYPE>,
+	//XRANGETYPE = number,
+	XSCALER extends Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, number> = (
+			[XORDINAL] extends [true]
+				? (
+					InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>> extends StringValue
+						? Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, number> & ScaleBand<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>>
+						: never
+					)
+				: (
+					InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>> extends NumberValue
+						? Scaler<InferDomainType<NoInfer<ROW>, NoInfer<XACCESSOR>>, number> & ScaleLinear<number, number, never>
+						: never
+					)
+			)
 
-	XRANGETYPE = number,
-	XSCALER extends Scaler<InferDomainType<NoInfer<ROW>, XACCESSOR>, XRANGETYPE> = (
+>(props: {
+	data: ROW[],
+	width: number,
+	height: number,
+	x: DimensionInput<ROW, XACCESSOR, XORDINAL, number, XSCALER>
+}) : {
+	x: DimensionOutput<ROW, XACCESSOR, XORDINAL, number, XSCALER>
+};
+/*
+(
 		XRANGETYPE extends number
 			? (
 				[XORDINAL] extends [true]
@@ -205,16 +229,8 @@ declare function createChart<
 					)
 			)
 			: never
-	),
-
->(props: {
-	data: ROW[],
-	width: number,
-	height: number,
-	x: DimensionInput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>
-}) : {
-	x: DimensionOutput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>
-};
+	)
+ */
 
 // todo
 // [y] Option for reversing range
@@ -238,12 +254,13 @@ const result = createChart({
 	height: 100,
 	x: {
 		//ordinal: true,
-		accessor: row => row.year,
+		//accessor: row => row.year,
 		//accessor: 'year'
+		accessor: 'apples'
 		//accessor: 'other',
 		//domain: ['x', 'y', 'z']
 		//domain: [1,2,3]
-		domain: ['x', null]
+		//domain: ['x', null]
 	},
 	//y: {
 	//	ordinal: true,
@@ -269,6 +286,13 @@ type XAccessorD = R['x']['accessor_d'];
 const xaccessor_d: XAccessorD = result.x.accessor_d;
 const x0d = xaccessor_d(data[0]);
 const xfaild = xaccessor_d({ unrelated: true });
+
+const xscalerFactory = result.x.scalerFactory;
+
+const xscaler_d = result.x.scaler_d;
+
+result.x.scaler_d.clamp()
+result.x.scaler_d.bandwidth()
 
 //const s: ScaleLinear<number, number, never> & Scaler<number, number> = null!;
 //
