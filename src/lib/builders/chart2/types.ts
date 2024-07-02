@@ -1,9 +1,11 @@
 import type { Readable, Writable } from 'svelte/store';
 import type { AsStores, MaybeStore } from '$lib';
+import { type scaleFactoryBand, scaleFactoryLinear } from './scale.js';
+import { type NumberValue, scaleLinear, type ScaleLinear } from 'd3-scale';
 
 export type Map2OptionalStore<TYPE> = { [k in keyof TYPE] : k extends 'ordinal' ? TYPE[k] : TYPE[k] | Readable<TYPE[k]> }
 export type Map2Stores<TYPE> = { [k in keyof TYPE] : k extends 'ordinal' ? TYPE[k] : Readable<TYPE[k]> }
-
+export type StringValue = { toString(): string };
 
 export type ValidKeys<ROW, DOMAINTYPE> = { [k in keyof ROW]: ROW[k] extends DOMAINTYPE ? k : never }[keyof ROW];
 
@@ -29,6 +31,32 @@ export type AccessorOutputMany<ROW, DOMAINTYPE> =
 export type AccessorOutput<ROW, DOMAINTYPE> =
 	AccessorOutputMany<ROW, DOMAINTYPE> |
 	AccessorOutputOne<ROW, DOMAINTYPE>;
+
+type InferDomainType<ROW, ACCESSOR> =
+	ACCESSOR extends keyof ROW
+		? ROW[ACCESSOR]
+		: ACCESSOR extends (row: ROW) => infer RETURN
+			? (
+				RETURN extends (infer DOMAINTYPE)[]
+					? DOMAINTYPE
+					: RETURN
+				)
+			: never;
+
+type InferAccessorOutput<ROW, ACCESSOR> =
+	ACCESSOR extends keyof ROW
+		? (
+			ROW[ACCESSOR] extends (infer DOMAINTYPE)[]
+				? AccessorOutputMany<ROW, DOMAINTYPE>
+				: AccessorOutputOne<ROW, ROW[ACCESSOR]>
+			)
+		: ACCESSOR extends (row: ROW) => infer RETURN
+			? (
+				RETURN extends (infer DOMAINTYPE)[]
+					? AccessorOutputMany<ROW, DOMAINTYPE>
+					: AccessorOutputOne<ROW, RETURN>
+				)
+			: never;
 
 export type CompareFunc<VALUETYPE> = (a: VALUETYPE, b: VALUETYPE) => number;
 
@@ -97,18 +125,7 @@ export type AccessorScaledOutput<ROW, RANGETYPE> =
 	AccessorScaledOutputMany<ROW, RANGETYPE>;
 
 export interface ScalerFactoryPropsScalar<ROW, DOMAINTYPE, RANGETYPE> {
-	data: ROW[],
-	width: number,
-	height: number,
 	ordinal: undefined | false,
-	accessor: AccessorInput<ROW, DOMAINTYPE>,
-	extents: undefined | ExtentsInputScalar<DOMAINTYPE>,
-	extentDefault: undefined | DOMAINTYPE,
-	domain: undefined | DomainInputScalar<DOMAINTYPE>,
-	range: undefined | RangeInput<RANGETYPE>,
-	reverse: boolean,
-	accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
-	extents_d: ExtentsOutputScalar<DOMAINTYPE>,
 	domain_d: DomainOutputScalar<DOMAINTYPE>,
 	range_d: RangeOutput<RANGETYPE>,
 }
@@ -117,18 +134,7 @@ export type ScalerFactoryScalar<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scale
 	(props: ScalerFactoryPropsScalar<ROW, DOMAINTYPE, RANGETYPE>) => SCALER
 
 export interface ScalerFactoryPropsOrdinal<ROW, DOMAINTYPE, RANGETYPE> {
-	data: ROW[],
-	width: number,
-	height: number,
 	ordinal: true,
-	accessor: AccessorInput<ROW, DOMAINTYPE>,
-	sort: undefined | CompareFunc<DOMAINTYPE>,
-	extents: undefined | ExtentsInputOrdinal<DOMAINTYPE>,
-	domain: undefined | DomainInputOrdinal<DOMAINTYPE>,
-	range: undefined | RangeInput<RANGETYPE>,
-	reverse: boolean,
-	accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
-	extents_d: ExtentsOutputOrdinal<DOMAINTYPE>,
 	domain_d: DomainOutputOrdinal<DOMAINTYPE>,
 	range_d: RangeOutput<RANGETYPE>,
 }
@@ -137,51 +143,13 @@ export type ScalerFactoryOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scal
 	(props: ScalerFactoryPropsOrdinal<ROW, DOMAINTYPE, RANGETYPE>) => SCALER
 
 export interface ScalerFactoryProps<ROW, DOMAINTYPE, RANGETYPE> {
-	data: ROW[],
-	width: number,
-	height: number,
-	ordinal: boolean,
-	accessor: AccessorInput<ROW, DOMAINTYPE>,
-	sort: undefined | CompareFunc<DOMAINTYPE>,
-	extents: undefined | ExtentsInput<DOMAINTYPE>,
-	extentDefault: undefined | DOMAINTYPE,
-	domain: undefined | DomainInput<DOMAINTYPE>,
-	range: undefined | RangeInput<RANGETYPE>,
-	reverse: boolean,
-	accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
-	extents_d: ExtentsOutput<DOMAINTYPE>,
+	ordinal?: boolean,
 	domain_d: DomainOutput<DOMAINTYPE>,
 	range_d: RangeOutput<RANGETYPE>,
 }
 
 export type ScalerFactory<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
 	(props: ScalerFactoryProps<ROW, DOMAINTYPE, RANGETYPE>) => SCALER
-
-type InferDomainType<ROW, ACCESSOR> =
-	ACCESSOR extends keyof ROW
-		? ROW[ACCESSOR]
-		: ACCESSOR extends (row: ROW) => infer RETURN
-		? (
-			RETURN extends (infer DOMAINTYPE)[]
-			? DOMAINTYPE
-			: RETURN
-		)
-		: never;
-
-type InferAccessorOutput<ROW, ACCESSOR> =
-	ACCESSOR extends keyof ROW
-		? (
-			ROW[ACCESSOR] extends (infer DOMAINTYPE)[]
-			? AccessorOutputMany<ROW, DOMAINTYPE>
-			: AccessorOutputOne<ROW, ROW[ACCESSOR]>
-		)
-		: ACCESSOR extends (row: ROW) => infer RETURN
-			? (
-				RETURN extends (infer DOMAINTYPE)[]
-					? AccessorOutputMany<ROW, DOMAINTYPE>
-					: AccessorOutputOne<ROW, RETURN>
-				)
-			: never;
 
 interface DimensionInput<
 	ROW,
@@ -218,7 +186,26 @@ interface DimensionOutput<
 
 declare function createChart<
 	ROW,
-	XACCESSOR extends AccessorInput<ROW, unknown>, XORDINAL extends boolean, XRANGETYPE, XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE>,
+	XACCESSOR extends AccessorInput<ROW, unknown>, XORDINAL extends boolean,
+
+	XRANGETYPE = number,
+	XSCALER extends Scaler<InferDomainType<NoInfer<ROW>, XACCESSOR>, XRANGETYPE> = (
+		XRANGETYPE extends number
+			? (
+				[XORDINAL] extends [true]
+					? (
+						InferDomainType<NoInfer<ROW>, XACCESSOR> extends StringValue
+							? ReturnType<typeof scaleFactoryBand<InferDomainType<NoInfer<ROW>, XACCESSOR>, ROW>>
+							: never
+					)
+					: (
+						InferDomainType<NoInfer<ROW>, XACCESSOR> extends NumberValue
+							? ReturnType<typeof scaleFactoryLinear<InferDomainType<NoInfer<ROW>, XACCESSOR>, ROW>>
+							: never
+					)
+			)
+			: never
+	),
 
 >(props: {
 	data: ROW[],
@@ -234,6 +221,7 @@ declare function createChart<
 // [ ] make chartFactory dependencies keyed
 // [ ] Default scale types
 // [ ] Default scale types should be exposed in return
+// [ ] add meta(data)
 
 // testing
 
@@ -282,4 +270,28 @@ const xaccessor_d: XAccessorD = result.x.accessor_d;
 const x0d = xaccessor_d(data[0]);
 const xfaild = xaccessor_d({ unrelated: true });
 
+//const s: ScaleLinear<number, number, never> & Scaler<number, number> = null!;
+//
+//s(1);
+
+const s = scaleFactoryLinear({
+	data: data,
+	width: 10,
+	height: 10,
+	ordinal: true,
+	accessor: (row: Row) => row.apples,//'year',
+	sort: undefined,
+	extents: undefined,
+	extentDefault: undefined,
+	domain: undefined,
+	range: undefined,
+	reverse: false,
+	accessor_d: (row: Row) => row.apples,
+	extents_d: [1,2],
+	domain_d: [1,2],
+	range_d: [1,2]
+})
+
+s(1);
+s('x');
 

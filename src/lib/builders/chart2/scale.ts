@@ -1,35 +1,41 @@
 import { type NumberValue, scaleBand, scaleLinear, scaleSqrt } from 'd3-scale';
-import type { ScalerFactoryProps } from './types.js';
+import type { Scaler, ScalerFactoryProps, StringValue } from './types.js';
 
-export function scaleLinearFactory<DOMAINTYPE extends NumberValue>(
+export function scaleFactoryLinear<DOMAINTYPE extends NumberValue, ROW = unknown>(
 	{
 		domain_d,
 		range_d
-	}: ScalerFactoryProps<unknown, DOMAINTYPE, number>
+	}: ScalerFactoryProps<ROW, DOMAINTYPE, number>
 ) {
-	return scaleLinear<number>()
+	const scale = scaleLinear<number>()
 		.domain(domain_d)
-		.range(range_d)
+		.range(range_d);
+
+	return scale as (typeof scale & Scaler<DOMAINTYPE, number>);
 }
 
-export function scaleBandFactory<DOMAINTYPE extends { toString(): string } = string>(
+export function scaleFactoryBand<DOMAINTYPE extends StringValue = string, ROW = unknown>(
 	{
 		domain_d,
 		range_d
-	}: ScalerFactoryProps<unknown, DOMAINTYPE, number>
+	}: ScalerFactoryProps<ROW, DOMAINTYPE, number>
 ) {
-	return scaleBand<DOMAINTYPE>()
+	const scale = scaleBand<DOMAINTYPE>()
 		.domain(domain_d)
-		.range(range_d)
+		.range(range_d);
+
+	return scale as (typeof scale & Scaler<DOMAINTYPE, number>);
 }
 
-export function scaleSqrtFactory<DOMAINTYPE extends NumberValue>(
+export function scaleFactorySqrt<DOMAINTYPE extends NumberValue, ROW = unknown>(
 	{
 		domain_d,
 		range_d
-	}: ScalerFactoryProps<unknown, DOMAINTYPE, number>
+	}: ScalerFactoryProps<ROW, DOMAINTYPE, number>
 ) {
-	return scaleSqrt<number>()
+	const scale = scaleSqrt<number>()
 		.domain(domain_d)
-		.range(range_d)
+		.range(range_d);
+
+	return scale as (typeof scale & Scaler<DOMAINTYPE, number>);
 }
