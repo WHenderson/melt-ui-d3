@@ -30,6 +30,8 @@ export interface IScaleDomain<DOMAINTYPE> {
     domain(domain: Iterable<DOMAINTYPE>): this;
 }
 
+export type Stringable = { toString(): string };
+
 export type Sort<VALUETYPE> = (a: VALUETYPE, b: VALUETYPE) => number;
 
 export type ExtentsOptionOrdinal<DOMAINTYPE> = DOMAINTYPE[];
@@ -64,7 +66,7 @@ export type ScaleFactory<ROW, DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINT
     props: ScaleInputsType<ROW, DOMAINTYPE, RANGETYPE>
 ) => SCALE;
 
-export type MaybeStore<TYPE> = TYPE | Readable<TYPE>;
+export type MaybeStore<TYPE> = TYPE;// | Readable<TYPE>;
 
 export type AsMaybeStores<TYPE> = { [k in keyof TYPE] : k extends 'ordinal' ? TYPE[k] : MaybeStore<TYPE[k]> }
 

@@ -14,7 +14,7 @@ import type {
     ScaleFactoryOrdinal,
     ScaleFactoryScalar,
     ScaleInputsType,
-    Scaler,
+    Scaler, Stringable,
 } from './types.js';
 import { derived, type Readable, writable } from 'svelte/store';
 import { scaleBandFactory, scaleLinearFactory, scaleSqrtFactory } from './scale.js';
@@ -31,9 +31,9 @@ type LinearScale<DOMAINTYPE, RANGETYPE> =
 
 
 type BandScale<DOMAINTYPE, RANGETYPE> =
-  DOMAINTYPE extends NumberValue
+  DOMAINTYPE extends Stringable
     ? (
-      RANGETYPE extends number
+      RANGETYPE extends number | undefined
         ? Scale<DOMAINTYPE, RANGETYPE> & ScaleBand<DOMAINTYPE>
         : never
       )
@@ -329,7 +329,7 @@ export function createChart<
     ROW,
     XDOMAINTYPE,
     YDOMAINTYPE,
-    XRANGETYPE = number,
+    XRANGETYPE = string,
     YRANGETYPE = number,
     XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
     YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
