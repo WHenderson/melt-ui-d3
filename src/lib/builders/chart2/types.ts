@@ -171,23 +171,23 @@ export type DimensionInput<
 			? {
 				ordinal: ORDINAL,
 			} &
-			{
+			Map2OptionalStore<{
 				sort?: CompareFunc<InferDomainType<ROW, ACCESSOR>>,
 				extents?: ExtentsInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
 				extentDefault?: undefined,
 				domain?: DomainInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
 				scalerFactory?: ScalerFactoryOrdinal<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>
-			}
+			}>
 			: {
 				ordinal?: false
 			} &
-			{
+			Map2OptionalStore<{
 				sort?: undefined,
 				extents?: ExtentsInputScalar<InferDomainType<ROW, ACCESSOR>>,
 				extentDefault?: InferDomainType<ROW, ACCESSOR>
 				domain?: DomainInputScalar<InferDomainType<ROW, ACCESSOR>>,
 				scalerFactory?: ScalerFactoryScalar<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>,
-			}
+			}>
 	)
 
 export type DimensionOutput<
@@ -198,22 +198,51 @@ export type DimensionOutput<
 	RANGETYPE,
 	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
 > =
-	DimensionInput<ROW, META, ACCESSOR, ORDINAL, RANGETYPE, SCALER> &
-	{
+	// input
+	Map2Stores<{
+		accessor: ACCESSOR,
+		range?: RangeInput<RANGETYPE>,
+		reverse?: boolean,
+	}> &
+	(
+		[ORDINAL] extends [true]
+			? {
+			ordinal: ORDINAL,
+		} &
+			Map2Stores<{
+				sort: undefined | CompareFunc<InferDomainType<ROW, ACCESSOR>>,
+				extents: undefined | ExtentsInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
+				extentDefault: undefined,
+				domain: undefined | DomainInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
+				scalerFactory: undefined | ScalerFactoryOrdinal<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>
+			}>
+			: {
+			ordinal?: false
+		} &
+			Map2Stores<{
+				sort: undefined,
+				extents: undefined | ExtentsInputScalar<InferDomainType<ROW, ACCESSOR>>,
+				extentDefault: undefined | InferDomainType<ROW, ACCESSOR>
+				domain: undefined | DomainInputScalar<InferDomainType<ROW, ACCESSOR>>,
+				scalerFactory: undefined | ScalerFactoryScalar<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>,
+			}>
+		) &
+	// output
+	Map2Stores<{
 		accessor_d: InferAccessorOutput<ROW, ACCESSOR>,
 		range_d: RangeOutput<RANGETYPE>,
 		scaler_d: SCALER,
 		scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
-	} &
+	}> &
 	(
 	[ORDINAL] extends [true]
-		? {
+		? Map2Stores<{
 			extents_d: ExtentsOutputOrdinal<InferDomainType<ROW, ACCESSOR>>,
 			domain_d: DomainOutputOrdinal<InferDomainType<ROW, ACCESSOR>>,
 
-		}
-		: {
+		}>
+		: Map2Stores<{
 			extents_d: ExtentsOutputScalar<InferDomainType<ROW, ACCESSOR>>,
 			domain_d: DomainOutputScalar<InferDomainType<ROW, ACCESSOR>>,
-		}
+		}>
 	)

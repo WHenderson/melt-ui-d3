@@ -111,10 +111,12 @@ export function createChart<
 	z?: DimensionInput<ROW, NoInfer<META>, ZACCESSOR, ZORDINAL, ZRANGETYPE, ZSCALER>,
 	r?: DimensionInput<ROW, NoInfer<META>, RACCESSOR, RORDINAL, RRANGETYPE, RSCALER>,
 }) : (
-	{
+	Map2Stores<{
 		data: ROW[],
 		width: number,
 		height: number,
+	}> &
+	{
 		x: DimensionOutput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
 		y: DimensionOutput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>,
 	} &
