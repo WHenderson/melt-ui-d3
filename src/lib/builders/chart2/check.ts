@@ -1,5 +1,6 @@
 import { createChart } from './create.js';
 import type { DomainInputOrdinal, DomainInputScalar, DomainOutputOrdinal } from './types.js';
+import type { Readable } from 'svelte/store';
 
 type IsEqual<A,B> = [A] extends [B] ? true : false;
 type Contains<C, M> = M extends keyof C ? true : false;
@@ -41,7 +42,7 @@ const meta = {
 	type HasZ = Assert<Contains<typeof result, 'z'>, false>;
 	type HasR = Assert<Contains<typeof result, 'r'>, false>;
 
-	type HasMeta = Assert<IsEqual<typeof result.meta, typeof meta>, true>
+	type HasMeta = Assert<IsEqual<typeof result.meta, Readable<typeof meta>>, true>
 
 	type XOrdinal = Assert<IsEqual<typeof result.x.ordinal, true>, true>;
 	type XAccessorInput = Assert<IsEqual<Parameters<typeof result.x.accessor_d>, [Row]>, true>;

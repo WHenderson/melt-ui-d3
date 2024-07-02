@@ -1,5 +1,13 @@
 import type { NumberValue, ScaleBand, ScaleLinear } from 'd3-scale';
-import type { AccessorInput, DimensionInput, DimensionOutput, InferDomainType, Scaler, StringValue } from './types.js';
+import type {
+	AccessorInput,
+	DimensionInput,
+	DimensionOutput,
+	InferDomainType,
+	Map2OptionalStore, Map2Stores,
+	Scaler,
+	StringValue,
+} from './types.js';
 
 export function createChart<
 	ROW,
@@ -113,9 +121,9 @@ export function createChart<
 	(
 		unknown extends META
 			? NonNullable<unknown>
-			: {
+			: Map2Stores<{
 				meta: META,
-			}
+			}>
 	) &
 	(
 		InferDomainType<ROW, ZACCESSOR> extends unknown

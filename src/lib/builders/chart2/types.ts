@@ -170,6 +170,8 @@ export type DimensionInput<
 		[ORDINAL] extends [true]
 			? {
 				ordinal: ORDINAL,
+			} &
+			{
 				sort?: CompareFunc<InferDomainType<ROW, ACCESSOR>>,
 				extents?: ExtentsInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
 				extentDefault?: undefined,
@@ -178,6 +180,8 @@ export type DimensionInput<
 			}
 			: {
 				ordinal?: false
+			} &
+			{
 				sort?: undefined,
 				extents?: ExtentsInputScalar<InferDomainType<ROW, ACCESSOR>>,
 				extentDefault?: InferDomainType<ROW, ACCESSOR>
