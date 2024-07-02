@@ -3,6 +3,7 @@ import type { AccessorInput, DimensionInput, DimensionOutput, InferDomainType, S
 
 export function createChart<
 	ROW,
+	META,
 
 	XACCESSOR extends AccessorInput<ROW, unknown>,
 	XORDINAL extends boolean,
@@ -94,29 +95,40 @@ export function createChart<
 		),
 >(props: {
 	data: ROW[],
+	meta?: META,
 	width: number,
 	height: number,
-	x: DimensionInput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
-	y: DimensionInput<ROW, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>,
-	z?: DimensionInput<ROW, ZACCESSOR, ZORDINAL, ZRANGETYPE, ZSCALER>,
-	r?: DimensionInput<ROW, RACCESSOR, RORDINAL, RRANGETYPE, RSCALER>,
+	x: DimensionInput<ROW, NoInfer<META>, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
+	y: DimensionInput<ROW, NoInfer<META>, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>,
+	z?: DimensionInput<ROW, NoInfer<META>, ZACCESSOR, ZORDINAL, ZRANGETYPE, ZSCALER>,
+	r?: DimensionInput<ROW, NoInfer<META>, RACCESSOR, RORDINAL, RRANGETYPE, RSCALER>,
 }) : (
 	{
-		x: DimensionOutput<ROW, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
-		y: DimensionOutput<ROW, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>,
+		data: ROW[],
+		width: number,
+		height: number,
+		x: DimensionOutput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
+		y: DimensionOutput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>,
 	} &
+	(
+		unknown extends META
+			? NonNullable<unknown>
+			: {
+				meta: META,
+			}
+	) &
 	(
 		InferDomainType<ROW, ZACCESSOR> extends unknown
 			? NonNullable<unknown>
 			: {
-				z: DimensionOutput<ROW, ZACCESSOR, ZORDINAL, ZRANGETYPE, ZSCALER>,
+				z: DimensionOutput<ROW, META, ZACCESSOR, ZORDINAL, ZRANGETYPE, ZSCALER>,
 			}
 	) &
 	(
 		InferDomainType<ROW, RACCESSOR> extends unknown
 			? NonNullable<unknown>
 			: {
-				r: DimensionOutput<ROW, RACCESSOR, RORDINAL, RRANGETYPE, RSCALER>,
+				r: DimensionOutput<ROW, META, RACCESSOR, RORDINAL, RRANGETYPE, RSCALER>,
 			}
 	)
 )

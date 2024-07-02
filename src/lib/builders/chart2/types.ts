@@ -123,35 +123,39 @@ export type AccessorScaledOutput<ROW, RANGETYPE> =
 	AccessorScaledOutputOne<ROW, RANGETYPE> |
 	AccessorScaledOutputMany<ROW, RANGETYPE>;
 
-export interface ScalerFactoryPropsScalar<ROW, DOMAINTYPE, RANGETYPE> {
+export interface ScalerFactoryPropsScalar<META, DOMAINTYPE, RANGETYPE> {
+	meta: META,
 	ordinal: undefined | false,
 	domain_d: DomainOutputScalar<DOMAINTYPE>,
 	range_d: RangeOutput<RANGETYPE>,
 }
 
-export type ScalerFactoryScalar<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
-	(props: ScalerFactoryPropsScalar<ROW, DOMAINTYPE, RANGETYPE>) => SCALER
+export type ScalerFactoryScalar<META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
+	(props: ScalerFactoryPropsScalar<META, DOMAINTYPE, RANGETYPE>) => SCALER
 
-export interface ScalerFactoryPropsOrdinal<ROW, DOMAINTYPE, RANGETYPE> {
+export interface ScalerFactoryPropsOrdinal<META, DOMAINTYPE, RANGETYPE> {
+	meta: META,
 	ordinal: true,
 	domain_d: DomainOutputOrdinal<DOMAINTYPE>,
 	range_d: RangeOutput<RANGETYPE>,
 }
 
-export type ScalerFactoryOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
-	(props: ScalerFactoryPropsOrdinal<ROW, DOMAINTYPE, RANGETYPE>) => SCALER
+export type ScalerFactoryOrdinal<META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
+	(props: ScalerFactoryPropsOrdinal<META, DOMAINTYPE, RANGETYPE>) => SCALER
 
-export interface ScalerFactoryProps<ROW, DOMAINTYPE, RANGETYPE> {
+export interface ScalerFactoryProps<META, DOMAINTYPE, RANGETYPE> {
+	meta: META,
 	ordinal?: boolean,
 	domain_d: DomainOutput<DOMAINTYPE>,
 	range_d: RangeOutput<RANGETYPE>,
 }
 
-export type ScalerFactory<ROW, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
-	(props: ScalerFactoryProps<ROW, DOMAINTYPE, RANGETYPE>) => SCALER
+export type ScalerFactory<META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
+	(props: ScalerFactoryProps<META, DOMAINTYPE, RANGETYPE>) => SCALER
 
 export type DimensionInput<
 	ROW,
+	META,
 	ACCESSOR extends AccessorInput<ROW, unknown>,
 	ORDINAL extends boolean,
 	RANGETYPE,
@@ -170,7 +174,7 @@ export type DimensionInput<
 				extents?: ExtentsInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
 				extentDefault?: undefined,
 				domain?: DomainInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
-				scalerFactory?: ScalerFactoryOrdinal<ROW, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>
+				scalerFactory?: ScalerFactoryOrdinal<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>
 			}
 			: {
 				ordinal?: false
@@ -178,18 +182,19 @@ export type DimensionInput<
 				extents?: ExtentsInputScalar<InferDomainType<ROW, ACCESSOR>>,
 				extentDefault?: InferDomainType<ROW, ACCESSOR>
 				domain?: DomainInputScalar<InferDomainType<ROW, ACCESSOR>>,
-				scalerFactory?: ScalerFactoryScalar<ROW, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>,
+				scalerFactory?: ScalerFactoryScalar<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>,
 			}
 	)
 
 export type DimensionOutput<
 	ROW,
+	META,
 	ACCESSOR extends AccessorInput<ROW, unknown>,
 	ORDINAL extends boolean,
 	RANGETYPE,
 	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
 > =
-	DimensionInput<ROW, ACCESSOR, ORDINAL, RANGETYPE, SCALER> &
+	DimensionInput<ROW, META, ACCESSOR, ORDINAL, RANGETYPE, SCALER> &
 	{
 		accessor_d: InferAccessorOutput<ROW, ACCESSOR>,
 		range_d: RangeOutput<RANGETYPE>,

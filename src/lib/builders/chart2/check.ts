@@ -13,9 +13,14 @@ const ndata  = [
 type Row = { year: string, apples: number };
 const rdata: Row[] = ndata;
 
+const meta = {
+	myMeta: 'hello world'
+}
+
 {
 	const result = createChart({
 		data: rdata,
+		meta: meta,
 		width: 0,
 		height: 0,
 		x: {
@@ -35,6 +40,8 @@ const rdata: Row[] = ndata;
 	type HasY = Assert<Contains<typeof result, 'y'>, true>;
 	type HasZ = Assert<Contains<typeof result, 'z'>, false>;
 	type HasR = Assert<Contains<typeof result, 'r'>, false>;
+
+	type HasMeta = Assert<IsEqual<typeof result.meta, typeof meta>, true>
 
 	type XOrdinal = Assert<IsEqual<typeof result.x.ordinal, true>, true>;
 	type XAccessorInput = Assert<IsEqual<Parameters<typeof result.x.accessor_d>, [Row]>, true>;
@@ -56,4 +63,4 @@ const rdata: Row[] = ndata;
 // [x] make chartFactory dependencies keyed
 // [y] Default scale types should be exposed in return
 // [ ] Default scale types (in implementation)
-// [ ] add meta(data)
+// [y] add meta(data)
