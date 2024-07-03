@@ -2,7 +2,8 @@ import type { Readable, Writable } from 'svelte/store';
 import { type scaleFactoryBand, scaleFactoryLinear } from './scale.js';
 import { type NumberValue, type ScaleBand, scaleLinear, type ScaleLinear } from 'd3-scale';
 
-export type Map2OptionalStore<TYPE> = { [k in keyof TYPE] : k extends 'ordinal' ? TYPE[k] : TYPE[k] | Readable<TYPE[k]> }
+export type OptionalStore<TYPE> = TYPE | Readable<TYPE>;
+export type Map2OptionalStore<TYPE> = { [k in keyof TYPE] : k extends 'ordinal' ? TYPE[k] : OptionalStore<TYPE[k]> }
 export type Map2Stores<TYPE> = { [k in keyof TYPE] : k extends 'ordinal' ? TYPE[k] : Readable<TYPE[k]> }
 export type StringValue = { toString(): string };
 
@@ -63,7 +64,6 @@ export type ExtentsInputScalar<DOMAINTYPE> =
 	[DOMAINTYPE | null, DOMAINTYPE | null];
 
 export type ExtentsInputOrdinal<DOMAINTYPE> =
-	[DOMAINTYPE | null, DOMAINTYPE | null] |
 	DOMAINTYPE[];
 
 export type ExtentsInput<DOMAINTYPE> =
@@ -74,37 +74,46 @@ export type ExtentsOutputScalar<DOMAINTYPE> =
 	[DOMAINTYPE, DOMAINTYPE];
 
 export type ExtentsOutputOrdinal<DOMAINTYPE> =
-	DOMAINTYPE[];
+	Set<DOMAINTYPE>;
 
 export type ExtentsOutput<DOMAINTYPE> =
 	ExtentsOutputScalar<DOMAINTYPE> |
 	ExtentsOutputOrdinal<DOMAINTYPE>;
 
+export type DomainInputScalarFunc<DOMAINTYPE> =
+	((extents: [DOMAINTYPE, DOMAINTYPE], extentDefault: DOMAINTYPE) => DomainOutputScalar<DOMAINTYPE>);
+
 export type DomainInputScalar<DOMAINTYPE> =
-	[DOMAINTYPE | null, DOMAINTYPE | null] |
-	((domain: [DOMAINTYPE | null, DOMAINTYPE | null], extentDefault: DOMAINTYPE) => [DOMAINTYPE, DOMAINTYPE]);
+	[DOMAINTYPE | null, ...DOMAINTYPE[], DOMAINTYPE | null] |
+	DomainInputScalarFunc<DOMAINTYPE>;
+
+export type DomainInputOrdinalFunc<DOMAINTYPE> =
+	((extents: Set<DOMAINTYPE>) => DomainOutputOrdinal<DOMAINTYPE>);
 
 export type DomainInputOrdinal<DOMAINTYPE> =
 	DOMAINTYPE[] |
-	((domain: DOMAINTYPE[]) => DOMAINTYPE[]);
+	DomainInputOrdinalFunc<DOMAINTYPE>;
 
 export type DomainInput<DOMAINTYPE> =
 	DomainInputScalar<DOMAINTYPE> |
 	DomainInputOrdinal<DOMAINTYPE>;
 
 export type DomainOutputScalar<DOMAINTYPE> =
-	[DOMAINTYPE, DOMAINTYPE];
+	[DOMAINTYPE, DOMAINTYPE, ...DOMAINTYPE[]];
 
 export type DomainOutputOrdinal<DOMAINTYPE> =
-	DOMAINTYPE[];
+	Set<DOMAINTYPE>;
 
 export type DomainOutput<DOMAINTYPE> =
 	DomainOutputScalar<DOMAINTYPE> |
 	DomainOutputOrdinal<DOMAINTYPE>;
 
+export type RangeInputFunc<RANGETYPE> =
+	(({ width, height }: { width: number, height: number }) => RangeOutput<RANGETYPE>);
+
 export type RangeInput<RANGETYPE> =
 	[RANGETYPE, RANGETYPE, ...RANGETYPE[]] |
-	((range: [RANGETYPE, RANGETYPE, ...RANGETYPE[]], { width, height }: { width: number, height: number }) => [RANGETYPE, RANGETYPE, ...RANGETYPE[]]);
+	RangeInputFunc<RANGETYPE>;
 
 export type RangeOutput<RANGETYPE> =
 	[RANGETYPE, RANGETYPE, ...RANGETYPE[]];
@@ -123,19 +132,9 @@ export type AccessorScaledOutput<ROW, RANGETYPE> =
 	AccessorScaledOutputOne<ROW, RANGETYPE> |
 	AccessorScaledOutputMany<ROW, RANGETYPE>;
 
-export interface ScalerFactoryPropsScalar<META, DOMAINTYPE, RANGETYPE> {
-	meta: META,
-	ordinal: undefined | false,
-	domain_d: DomainOutputScalar<DOMAINTYPE>,
-	range_d: RangeOutput<RANGETYPE>,
-}
-
-export type ScalerFactoryScalar<META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
-	(props: ScalerFactoryPropsScalar<META, DOMAINTYPE, RANGETYPE>) => SCALER
-
 export interface ScalerFactoryPropsOrdinal<META, DOMAINTYPE, RANGETYPE> {
 	meta: META,
-	ordinal: true,
+	ordinal: boolean, //true,
 	domain_d: DomainOutputOrdinal<DOMAINTYPE>,
 	range_d: RangeOutput<RANGETYPE>,
 }
@@ -143,15 +142,27 @@ export interface ScalerFactoryPropsOrdinal<META, DOMAINTYPE, RANGETYPE> {
 export type ScalerFactoryOrdinal<META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
 	(props: ScalerFactoryPropsOrdinal<META, DOMAINTYPE, RANGETYPE>) => SCALER
 
+export interface ScalerFactoryPropsScalar<META, DOMAINTYPE, RANGETYPE> {
+	meta: META,
+	ordinal: boolean, //undefined | false,
+	domain_d: DomainOutputScalar<DOMAINTYPE>,
+	range_d: RangeOutput<RANGETYPE>,
+}
+
+export type ScalerFactoryScalar<META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
+	(props: ScalerFactoryPropsScalar<META, DOMAINTYPE, RANGETYPE>) => SCALER
+
 export interface ScalerFactoryProps<META, DOMAINTYPE, RANGETYPE> {
 	meta: META,
-	ordinal?: boolean,
+	ordinal: boolean, //undefined | boolean,
 	domain_d: DomainOutput<DOMAINTYPE>,
 	range_d: RangeOutput<RANGETYPE>,
 }
 
 export type ScalerFactory<META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> =
-	(props: ScalerFactoryProps<META, DOMAINTYPE, RANGETYPE>) => SCALER
+	ScalerFactoryOrdinal<META, DOMAINTYPE, RANGETYPE, SCALER> |
+	ScalerFactoryScalar<META, DOMAINTYPE, RANGETYPE, SCALER>;
+	//(props: ScalerFactoryProps<META, DOMAINTYPE, RANGETYPE>) => SCALER
 
 export type DimensionInput<
 	ROW,
