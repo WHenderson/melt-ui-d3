@@ -1,40 +1,9 @@
 <script lang="ts">
-	import { createChart } from '$lib/index.js';
-	import { ascending } from 'd3-array';
-	import { scaleBand, scaleLinear } from 'd3-scale';
+	import { chart } from './workaround.js';
 
-	type R = { year: string, apples: number, bananas: number, cherries: number, dates: number }
-	const data: R[] = [
-		{year: '2019', apples: 3840, bananas: 1920, cherries: 960, dates: 400},
-		{year: '2018', apples: 1600, bananas: 1440, cherries: 960, dates: 400},
-		{year: '2017', apples: 820, bananas: 1000, cherries: 640, dates: 400},
-		{year: '2016', apples: 820, bananas: 560, cherries: 720, dates: 400}
-	];
+	const { data, width, height, x: { scaled_d: xGetScaled, scaler_d: xGetScaler }, y: { scaled_d: yGetScaled, scaler_d: yGetScaler, range_d: xRange }, data: d } = chart;
 
-	const chart = createChart(
-		{
-			data,
-			width: 100,
-			height: 100,
-			x: {
-				ordinal: true,
-				accessor: (row) => row.year,
-				sort: ascending,
-				range: [1, 599],
-				//scaleFactory: ({ domain_d, range_d }) => (scaleBand().domain(domain_d).range(range_d).paddingInner(0.028).round(true))
-			},
-			y: {
-				accessor: (row) => row.apples,
-				domain: [0, null],
-				range: [1, 399],
-				scaleFactory: ({ domain_d, range_d }) => scaleLinear().domain(domain_d).range([...range_d].reverse())
-			}
-		}
-	);
-
-	const { width, height, x: { scaled_d: xGetScaled, scale_d: xGetScale }, y: { scaled_d: yGetScaled, scale_d: yGetScale, range_d: xRange }, data: d } = chart;
-
-	$: console.log('xRange', $xRange, $d);
+	$: console.log('info', $data, $xGetScaler);
 
 	/*
 	TODO: [y] Y coordinates need to be inverted somewhere.. I think? - e.g. a value of 0 should have a short column not a tall one.
@@ -52,18 +21,17 @@
 </script>
 <div class="w-[600px] h-[400px]">
 	<div bind:clientWidth={$width} bind:clientHeight={$height} class="w-full h-full">
-		{#if typeof window !== 'undefined'}
-			<svg class="w-full h-full">
-				{#each data as row, i}
-					{@const x = $xGetScaled(row)}
-					{@const y0 = $yGetScale(0)}
-					{@const y = $yGetScaled(row)}
-					{@const w = $xGetScale.bandwidth() }
+			{#if typeof window !== 'undefined'}
+				<svg class="w-full h-full">
+					{#each $data as row, i}
+						{@const x = $xGetScaled(row)}
+						{@const y0 = $yGetScaler(0)}
+						{@const y = $yGetScaled(row)}
+						{@const w = $xGetScaler.bandwidth() }
 
-					<rect x={x} y={y} width={w} height={y0 - y} stroke="green" class="fill-white stroke-magnum-800 stroke-[2px]"/>
-
-				{/each}
-			</svg>
-		{/if}
-	</div>
+						<rect x={x} y={y} width={w} height={y0 - y} stroke="green" class="fill-white stroke-magnum-800 stroke-[2px]"/>
+					{/each}
+				</svg>
+			{/if}
+		</div>
 </div>

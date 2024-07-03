@@ -1,1463 +1,481 @@
+import type { NumberValue, ScaleBand, ScaleLinear, ScalePower } from 'd3-scale';
 import type {
-    Accessor,
-    AsStores,
-    ChartProps,
-    DimensionInputOrdinal,
-    DimensionInputScalar,
-    DimensionOutputOrdinal,
-    DimensionOutputScalar,
-    DimensionOutputTypeOrdinal,
-    DimensionOutputTypeScalar,
-    MaybeStore,
-    Merge,
-    Range, Scale,
-    ScaleFactoryOrdinal,
-    ScaleFactoryScalar,
-    ScaleInputsType,
-    Scaler, Stringable,
+	AccessorInput,
+	AccessorOutput,
+	AccessorScaledOutput,
+	CompareFunc,
+	DimensionInput,
+	DimensionOutput,
+	DomainAccessorInput,
+	DomainInput,
+	DomainInputOrdinalFunc,
+	DomainInputScalarFunc,
+	DomainOutput,
+	DomainOutputScalar,
+	ExtentsInput,
+	ExtentsInputScalar,
+	ExtentsOutput,
+	ExtentsOutputOrdinal,
+	ExtentsOutputScalar,
+	InferDomainType,
+	Map2OptionalStore,
+	Map2Stores,
+	RangeInput,
+	RangeOutput,
+	Scaler,
+	ScalerFactory,
+	StringValue,
 } from './types.js';
-import { derived, type Readable, writable } from 'svelte/store';
-import { scaleBandFactory, scaleLinearFactory, scaleSqrtFactory } from './scale.js';
-import type { NumberValue, ScaleBand, scaleBand, ScaleLinear, scaleLinear, ScalePower } from 'd3-scale';
+import { derived, type Readable } from 'svelte/store';
+import { constant, createFinderAccessor, makeStore } from './util.js';
+import { scaleFactoryBand, scaleFactoryLinear, scaleFactorySqrt } from './scale.js';
 
-type LinearScale<DOMAINTYPE, RANGETYPE> =
-  DOMAINTYPE extends NumberValue
-    ? (
-        RANGETYPE extends number
-        ? Scale<DOMAINTYPE, RANGETYPE> & ScaleLinear<number, number, never>
-        : never
-      )
-    : never;
-
-
-type BandScale<DOMAINTYPE, RANGETYPE> =
-  DOMAINTYPE extends Stringable
-    ? (
-      RANGETYPE extends number | undefined
-        ? Scale<DOMAINTYPE, RANGETYPE> & ScaleBand<DOMAINTYPE>
-        : never
-      )
-    : never;
-
-type SqrtScale<DOMAINTYPE, RANGETYPE> =
-  DOMAINTYPE extends NumberValue
-    ? (
-      RANGETYPE extends number
-        ? Scale<DOMAINTYPE, RANGETYPE> & ScalePower<number, number, never>
-        : never
-      )
-    : never;
-
-// x ordinal, y ordinal, no z, no r
 export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
+	ROW,
+	META,
+
+	XACCESSOR extends AccessorInput<ROW>,
+	XORDINAL extends boolean,
+
+
+	YACCESSOR extends AccessorInput<ROW>,
+	YORDINAL extends boolean,
+
+
+	ZACCESSOR extends AccessorInput<ROW>,
+	ZORDINAL extends boolean,
+
+
+	RACCESSOR extends AccessorInput<ROW>,
+	RORDINAL extends boolean,
+
+
+	XRANGETYPE = number,
+	XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> = (
+		XRANGETYPE extends number
+			? (
+				[XORDINAL] extends [true]
+					? (
+						InferDomainType<ROW, XACCESSOR> extends StringValue
+							? Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> & ScaleBand<InferDomainType<ROW, XACCESSOR>>
+							: never
+						)
+					: (
+						InferDomainType<ROW, XACCESSOR> extends NumberValue
+							? Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> & ScaleLinear<number, number, never>
+							: never
+						)
+				)
+			: never
+		),
+	YRANGETYPE = number,
+	YSCALER extends Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> = (
+		YRANGETYPE extends number
+			? (
+				[YORDINAL] extends [true]
+					? (
+						InferDomainType<ROW, YACCESSOR> extends StringValue
+							? Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> & ScaleBand<InferDomainType<ROW, YACCESSOR>>
+							: never
+						)
+					: (
+						InferDomainType<ROW, YACCESSOR> extends NumberValue
+							? Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> & ScaleLinear<number, number, never>
+							: never
+						)
+				)
+			: never
+		),
+	ZRANGETYPE = number,
+	ZSCALER extends Scaler<InferDomainType<ROW, ZACCESSOR>, ZRANGETYPE> = (
+		ZRANGETYPE extends number
+			? (
+				[ZORDINAL] extends [true]
+					? (
+						InferDomainType<ROW, ZACCESSOR> extends StringValue
+							? Scaler<InferDomainType<ROW, ZACCESSOR>, ZRANGETYPE> & ScaleBand<InferDomainType<ROW, ZACCESSOR>>
+							: never
+						)
+					: (
+						InferDomainType<ROW, ZACCESSOR> extends NumberValue
+							? Scaler<InferDomainType<ROW, ZACCESSOR>, ZRANGETYPE> & ScaleLinear<number, number, never>
+							: never
+						)
+				)
+			: never
+		),
+	RRANGETYPE = number,
+	RSCALER extends Scaler<InferDomainType<ROW, RACCESSOR>, RRANGETYPE> = (
+		RRANGETYPE extends number
+			? (
+				[RORDINAL] extends [true]
+					? (
+						InferDomainType<ROW, RACCESSOR> extends StringValue
+							? Scaler<InferDomainType<ROW, RACCESSOR>, RRANGETYPE> & ScaleBand<InferDomainType<ROW, RACCESSOR>>
+							: never
+						)
+					: (
+						InferDomainType<ROW, RACCESSOR> extends NumberValue
+							? Scaler<InferDomainType<ROW, RACCESSOR>, RRANGETYPE> & ScalePower<number, number, never>
+							: never
+						)
+				)
+			: never
+		),
 >(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>
-};
-
-// x ordinal, y ordinal, no z, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y ordinal, no z, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y ordinal, z ordinal, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-};
-
-// x ordinal, y ordinal, z ordinal, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y ordinal, z ordinal, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y ordinal, z scalar, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-};
-
-// x ordinal, y ordinal, z scalar, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y ordinal, z scalar, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y scalar, no z, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    XRANGETYPE = string,
-    YRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>
-};
-
-// x ordinal, y scalar, no z, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y scalar, no z, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y scalar, z ordinal, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-};
-
-// x ordinal, y scalar, z ordinal, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y scalar, z ordinal, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-  XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-  YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-  ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
-  RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y scalar, z scalar, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-};
-
-// x ordinal, y scalar, z scalar, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-  XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-  YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-  ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
-  RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x ordinal, y scalar, z scalar, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-  XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = BandScale<XDOMAINTYPE, XRANGETYPE>,
-  YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-  ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
-  RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y ordinal, no z, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>
-};
-
-// x scalar, y ordinal, no z, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y ordinal, no z, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = LinearScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y ordinal, z ordinal, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-};
-
-// x scalar, y ordinal, z ordinal, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y ordinal, z ordinal, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y ordinal, z scalar, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-};
-
-// x scalar, y ordinal, z scalar, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y ordinal, z scalar, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = BandScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y scalar, no z, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>
-};
-
-// x scalar, y scalar, no z, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y scalar, no z, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y scalar, z ordinal, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-};
-
-// x scalar, y scalar, z ordinal, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y scalar, z ordinal, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = BandScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y scalar, z scalar, no r
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-};
-
-// x scalar, y scalar, z scalar, r ordinal
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = BandScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// x scalar, y scalar, z scalar, r scalar
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE = number,
-    YRANGETYPE = number,
-    ZRANGETYPE = number,
-    RRANGETYPE = number,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE> = LinearScale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE> = LinearScale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE> = LinearScale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE> = SqrtScale<RDOMAINTYPE, RRANGETYPE>,
->(props: {
-    data: MaybeStore<ROW[]>,
-    width: MaybeStore<number>,
-    height: MaybeStore<number>,
-    x: DimensionInputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionInputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionInputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionInputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-})
-: {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: DimensionOutputScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-    y: DimensionOutputScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-    z: DimensionOutputScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-    r: DimensionOutputScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-};
-
-// implementation
-export function createChart<
-    ROW,
-    XDOMAINTYPE,
-    YDOMAINTYPE,
-    ZDOMAINTYPE,
-    RDOMAINTYPE,
-    XRANGETYPE,
-    YRANGETYPE,
-    ZRANGETYPE,
-    RRANGETYPE,
-    XSCALE extends Scale<XDOMAINTYPE, XRANGETYPE>,
-    YSCALE extends Scale<YDOMAINTYPE, YRANGETYPE>,
-    ZSCALE extends Scale<ZDOMAINTYPE, ZRANGETYPE>,
-    RSCALE extends Scale<RDOMAINTYPE, RRANGETYPE>,
->({ data, width, height, x, y, z, r }: ChartProps<ROW, XDOMAINTYPE, YDOMAINTYPE, ZDOMAINTYPE, RDOMAINTYPE, XRANGETYPE, YRANGETYPE, ZRANGETYPE, RRANGETYPE, XSCALE, YSCALE, ZSCALE, RSCALE>): {
-    data: Readable<ROW[]>,
-    width: Readable<number>,
-    height: Readable<number>,
-    x: AsStores<Merge<
-        DimensionOutputTypeOrdinal<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>,
-        DimensionOutputTypeScalar<ROW, XDOMAINTYPE, XRANGETYPE, XSCALE>
-    >>
-    y: AsStores<Merge<
-        DimensionOutputTypeOrdinal<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>,
-        DimensionOutputTypeScalar<ROW, YDOMAINTYPE, YRANGETYPE, YSCALE>
-    >>,
-    z?: AsStores<Merge<
-        DimensionOutputTypeOrdinal<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>,
-        DimensionOutputTypeScalar<ROW, ZDOMAINTYPE, ZRANGETYPE, ZSCALE>
-    >>,
-    r?: AsStores<Merge<
-        DimensionOutputTypeOrdinal<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>,
-        DimensionOutputTypeScalar<ROW, RDOMAINTYPE, RRANGETYPE, RSCALE>
-    >>,
-}
+	data: ROW[],
+	meta?: META,
+	width: number,
+	height: number,
+	x: DimensionInput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
+	y: DimensionInput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>,
+	z?: DimensionInput<ROW, META, ZACCESSOR, ZORDINAL, ZRANGETYPE, ZSCALER>,
+	r?: DimensionInput<ROW, META, RACCESSOR, RORDINAL, RRANGETYPE, RSCALER>,
+}) : (
+	Map2Stores<{
+		data: ROW[],
+		width: number,
+		height: number,
+	}> &
+	(
+		unknown extends META
+			? NonNullable<unknown>
+			: Map2Stores<{
+				meta: META,
+			}>
+		) &
+	{
+		x: DimensionOutput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
+		y: DimensionOutput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>,
+	} &
+	(
+		InferDomainType<ROW, ZACCESSOR> extends unknown
+			? NonNullable<unknown>
+			: {
+				z: DimensionOutput<ROW, META, ZACCESSOR, ZORDINAL, ZRANGETYPE, ZSCALER>,
+			}
+	) &
+	(
+		InferDomainType<ROW, RACCESSOR> extends unknown
+			? NonNullable<unknown>
+			: {
+				r: DimensionOutput<ROW, META, RACCESSOR, RORDINAL, RRANGETYPE, RSCALER>,
+			}
+	)
+)
 {
+	const _data = makeStore(props.data);
+	const _meta = makeStore(props.meta);
+	const _width = makeStore(props.width);
+	const _height = makeStore(props.height);
 
-    const isStore = <TYPE>(maybeStore: TYPE | Readable<TYPE>): maybeStore is Readable<TYPE> => {
-        return maybeStore && typeof maybeStore === 'object' && 'subscribe' in maybeStore;
-    }
+	function * createDimension<ROW, META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>>(
+		props : Map2OptionalStore<{
+			ordinal?: boolean,
+			accessor: DomainAccessorInput<ROW, DOMAINTYPE>
+			range?: RangeInput<RANGETYPE>,
+			reverse?: boolean,
+			sort?: CompareFunc<DOMAINTYPE>,
+			extents?: ExtentsInput<DOMAINTYPE>,
+			extentDefault?: DOMAINTYPE,
+			domain?: DomainInput<DOMAINTYPE>,
+			scalerFactory?: ScalerFactory<META, DOMAINTYPE, RANGETYPE, SCALER>,
+		}> | undefined,
+		defs: {
+			extentDefault: DOMAINTYPE,
+			scalerFactory: ScalerFactory<META, DOMAINTYPE, RANGETYPE, SCALER>,
+			range: RangeInput<RANGETYPE>,
+			reverse: boolean
+		}
+	): Generator<
+		// yield
+		Map2Stores<{
+			ordinal: boolean,
+			extents: undefined | ExtentsInput<DOMAINTYPE>,
+			accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
+		}>,
+		// return
+		Map2Stores<{
+			ordinal: undefined | boolean,
+			accessor: DomainAccessorInput<ROW, DOMAINTYPE>,
+			range: undefined | RangeInput<RANGETYPE>,
+			reverse: undefined | boolean,
+			sort: undefined | CompareFunc<DOMAINTYPE>,
+			extents: undefined | ExtentsInput<DOMAINTYPE>,
+			extentDefault: undefined | DOMAINTYPE,
+			domain: undefined | DomainInput<DOMAINTYPE>,
+			scalerFactory: undefined | ScalerFactory<META, DOMAINTYPE, RANGETYPE, SCALER>,
 
-    const makeStore = <TYPE>(maybeStore: TYPE | Readable<TYPE>): Readable<TYPE> => {
-        if (isStore(maybeStore)) {
-            return maybeStore;
-        } else {
-            return writable(maybeStore);
-        }
-    }
+			accessor_d: AccessorOutput<ROW, DOMAINTYPE>,
+			extents_d: ExtentsOutput<DOMAINTYPE>,
+			domain_d: DomainOutput<DOMAINTYPE>,
+			reverse_d: boolean,
+			range_d: RangeOutput<RANGETYPE>,
+			scaler_d: SCALER,
+			scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
+		}> | undefined,
+		// receive
+		Readable<Set<DOMAINTYPE> | [DOMAINTYPE | null, DOMAINTYPE | null] | undefined>
+	> {
+		if (!props)
+			return undefined;
 
-    const createDimension = <DOMAINTYPE, RANGETYPE, SCALE extends Scale<DOMAINTYPE, RANGETYPE>>(
-      dimension: DimensionInputOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE> | DimensionInputScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>,
-      def: {
-          range: MaybeStore<[RANGETYPE, RANGETYPE, ...RANGETYPE[]]>,
-          scaleFactory: MaybeStore<ScaleFactoryOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE>> | MaybeStore<ScaleFactoryScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>>
-      }
-      ) => {
-        const ordinal = !!dimension.ordinal;
-        const _accessor = makeStore(dimension.accessor);
-        const _sort = makeStore('sort' in dimension ? dimension.sort : undefined);
-        const _extents = makeStore(dimension.extents);
-        const _extentDefault = makeStore('extentDefault' in dimension ? (dimension.extentDefault ?? (0 as DOMAINTYPE)) : undefined);
-        const _domain = makeStore(dimension.domain);
-        const _range = makeStore(dimension.range);
-        const _range_def = makeStore(def.range);
-        const _scaleFactory = makeStore(dimension.scaleFactory);
-        const _scaleFactory_def = makeStore(def.scaleFactory);
+		const {
+			ordinal,
+			accessor,
+			range,
+			reverse,
+			sort,
+			extents,
+			extentDefault,
+			domain,
+			scalerFactory
+		} = props;
 
-        const accessor_d = derived(_accessor, $_accessor => {
-            return typeof $_accessor === 'function'
-            ? $_accessor
-            : (((row: ROW) => row[$_accessor]) as Accessor<ROW, DOMAINTYPE>)
-        });
+		const _accessor = makeStore(accessor);
+		const _range = makeStore(range);
+		const _reverse = makeStore(reverse);
+		const _sort = makeStore(sort);
+		const _extents = makeStore(extents);
+		const _extentDefault = 'extentDefault' in props
+			? makeStore(extentDefault) as Readable<DOMAINTYPE>
+			: makeStore(defs.extentDefault);
+		const _domain = makeStore(domain);
+		const _scalerFactory = makeStore(scalerFactory);
 
-        const extents_d = derived(
-            [_data, accessor_d, _extents, _sort, _extentDefault],
-            ([$_data, $_accessor_d, $_extents, $_sort, $_extentDefault]) => {
-                if (ordinal) {
-                    if ($_extents)
-                        return $_extents as DOMAINTYPE[];
+		const accessor_d = derived(
+			_accessor,
+			($_accessor) => {
+				if (typeof $_accessor === 'function')
+					return $_accessor
+				else
+					return (row: ROW) => row[$_accessor] as DOMAINTYPE; // not technically correct, but sufficient
+			}
+		);
 
-                    const unique = new Set<DOMAINTYPE>();
-                    for (const row of $_data) {
-                        const value = $_accessor_d(row);
+		const extentsFound = yield {
+			ordinal: !!ordinal,
+			extents: _extents,
+			accessor_d
+		}
 
-                        if (Array.isArray(value)) {
-                            value.forEach(value => unique.add(value))
-                        }
-                        else {
-                            unique.add(value);
-                        }
-                    }
+		const extents_d = ordinal
+			? extentsFound as Readable<ExtentsOutputOrdinal<DOMAINTYPE>>
+			: derived(
+				[
+					extentsFound as Readable<ExtentsInputScalar<DOMAINTYPE>>,
+					_extentDefault
+				],
+				([$extentsFound, $_extentDefault]) => {
+					return [$extentsFound[0] ?? $_extentDefault, $extentsFound[1] ?? $_extentDefault] satisfies ExtentsOutputScalar<DOMAINTYPE>;
+				});
 
-                    const results = [...unique];
-                    if ($_sort)
-                        results.sort($_sort);
+		const domain_d = derived(
+			[extents_d, _domain, _extentDefault],
+			([$extents_d, $_domain, $_extentDefault]) => {
+				if (!$_domain)
+					return $extents_d as DomainOutput<DOMAINTYPE>;
 
-                    return results;
-                }
-                else {
-                    if ($_extents && $_extents[0] !== null && $_extents[1] !== null)
-                        return $_extents as [DOMAINTYPE, DOMAINTYPE];
+				if (typeof $_domain === 'function') {
+					if (ordinal)
+						return ($_domain as DomainInputOrdinalFunc<DOMAINTYPE>)($extents_d as ExtentsOutputOrdinal<DOMAINTYPE>);
+					else
+						return ($_domain as DomainInputScalarFunc<DOMAINTYPE>)($extents_d as ExtentsOutputScalar<DOMAINTYPE>, $_extentDefault);
+				}
 
-                    let min: number | null = <number | null>null;
-                    let max: number | null = <number | null>null;
+				if (ordinal)
+					return new Set($_domain as DOMAINTYPE[]);
 
-                    const add = (value: DOMAINTYPE) => {
-                        if (typeof value === 'number' && !Number.isNaN(value)) {
-                            if (min === null || (value < min!))
-                                min = value;
-                            if (max === null || (value > max!))
-                                max = value;
-                        }
-                    }
+				return [
+					$_domain[0] ?? ($extents_d as ExtentsOutputScalar<DOMAINTYPE>)[0],
+					...($_domain.slice(1, -1) as DOMAINTYPE[]),
+					$_domain[$_domain.length - 1] ?? ($extents_d as ExtentsOutputScalar<DOMAINTYPE>)[1],
+				] as unknown as DomainOutputScalar<DOMAINTYPE>
+			}
+		);
 
-                    for (const row of $_data) {
-                        const value = $_accessor_d(row);
+		const reverse_d = derived(
+			_reverse,
+			$_reverse =>
+				$_reverse ?? defs.reverse
+		);
 
-                        if (Array.isArray(value)) {
-                            value.forEach(add)
-                        }
-                        else {
-                            add(value)
-                        }
-                    }
+		const range_d = derived(
+			[_range, reverse_d],
+			([$_range, $_reverse_d], set: (value: RangeOutput<RANGETYPE>) => void) => {
 
-                    if (min === null)
-                        min = $_extentDefault as number;
-                    if (max === null)
-                        max = $_extentDefault as number;
+				const range = $_range ?? defs.range;
+				const order = <R extends Array<unknown>>(r: R) => ($_reverse_d ? [...r].reverse() : r) as R;
 
-                    return [
-                        ($_extents && $_extents[0] !== null ? $_extents[0] : min!) as DOMAINTYPE,
-                        ($_extents && $_extents[1] !== null ? $_extents[1] : max!) as DOMAINTYPE
-                    ] as [DOMAINTYPE, DOMAINTYPE];
-                }
-            }
-        );
+				if (typeof range !== 'function')
+					return set(order(range));
 
-        const domain_d = derived(
-            [extents_d, _domain],
-            ([$extents_d, $_domain]) => {
-                if (!$_domain)
-                    return $extents_d;
+				return derived(
+					[_width, _height],
+						([$_width, $_height]) =>
+							order(range({ width: $_width, height: $_height }))
+				).subscribe(set)
+			}
+		);
 
-                if (ordinal) {
-                    const d = $_domain as DOMAINTYPE[] | ((domain: DOMAINTYPE[]) => DOMAINTYPE[]);
-                    const e = $extents_d as DOMAINTYPE[];
+		const scaler_d = derived(
+			[
+				_scalerFactory,
+				_meta,
+				domain_d,
+				range_d
+			],
+			([
+				$_scalerFactory,
+				$_meta,
+				$domain_d,
+				$range_d
+			 ]) => {
+				const factory = $_scalerFactory ?? defs.scalerFactory;
 
-                    if (typeof d === 'function')
-                        return d(e);
+				return factory({
+					meta: $_meta as never,
+					ordinal: !!ordinal,
+					domain_d: $domain_d as never,
+					range_d: $range_d
+				})
+			}
+		);
 
-                    return d;
-                }
-                else {
-                    const d = $_domain as [DOMAINTYPE | null, DOMAINTYPE | null, ...DOMAINTYPE[]] | ((domain: [DOMAINTYPE, DOMAINTYPE]) => [DOMAINTYPE, DOMAINTYPE, ...DOMAINTYPE[]]);
-                    const e = $extents_d as [DOMAINTYPE, DOMAINTYPE];
+		const scaled_d = derived(
+			[accessor_d, scaler_d],
+			([$accessor_d, $scaler_d]) => {
+				return ((row: ROW) => {
+					const value = $accessor_d(row);
+					if (Array.isArray(value))
+						return value.map(v => $scaler_d(v));
+					return $scaler_d(value);
+				}) as AccessorScaledOutput<ROW, RANGETYPE>
+			}
+		);
 
-                    if (typeof d === 'function')
-                        return d(e);
+		return {
+			ordinal: true,
+			accessor: _accessor,
+			range: _range,
+			reverse: _reverse,
+			sort: _sort,
+			extents: _extents,
+			extentDefault: _extentDefault,
+			domain: _domain,
+			scalerFactory: _scalerFactory,
+			accessor_d,
+			extents_d,
+			domain_d,
+			reverse_d,
+			range_d,
+			scaler_d,
+			scaled_d
+		}
+	}
 
-                    return [d[0] ?? e[0], d[1] ?? e[1], ...(d.slice(2) as DOMAINTYPE[])];
-                }
-            }
-        );
+	const genX = createDimension(
+		props.x as never,
+		{
+			extentDefault: 0 as never,
+			scalerFactory: (props.x.ordinal ? scaleFactoryBand : scaleFactoryLinear) as never,
+			range: ({ width }) => [0, width],
+			reverse: false
+		}
+	);
+	const genY = createDimension(
+		props.y as never,
+	{
+			extentDefault: 0 as never,
+			scalerFactory: (props.y.ordinal ? scaleFactoryBand : scaleFactoryLinear) as never,
+			range: ({ height }) => [0, height],
+			reverse: true
+		}
+	);
+	const genZ = createDimension(
+		props.z as never,
+		{
+			extentDefault: 0 as never,
+			scalerFactory: (props.z?.ordinal ? scaleFactoryBand : scaleFactoryLinear) as never,
+			range: ({ width }) => [0, width],
+			reverse: false
+		}
+	);
+	const genR = createDimension(
+		props.r as never,
+		{
+			extentDefault: 1 as never,
+			scalerFactory: (props.z?.ordinal ? scaleFactoryBand : scaleFactorySqrt) as never,
+			range: [1, 25],
+			reverse: false
+		}
+	);
 
-        const range_d = derived(
-            [_range, _range_def],
-            ([$_range, $_range_def], set: (value: Range<RANGETYPE>) => void) => {
-                const range = $_range ?? $_range_def;
-                if (typeof range === 'function') {
-                    return derived(
-                        [_width, _height],
-                        ([$_width, $_height]) =>
-                            range({ width : $_width, height: $_height })
-                    ).subscribe(set)
-                }
-                else
-                    return set(range);
-            }
-        );
+	const pass1X = genX.next().value;
+	const pass1Y = genY.next().value;
+	const pass1Z = genZ.next().value;
+	const pass1R = genR.next().value;
 
-        const scale_d = derived(
-            [
-                _data,
-                _width,
-                _height,
-                _accessor,
-                _sort,
-                _extents,
-                _extentDefault,
-                _domain,
-                _range,
-                accessor_d,
-                extents_d,
-                domain_d,
-                range_d,
-                _scaleFactory,
-                _scaleFactory_def
-            ],
-            ([
-                 $_data,
-                 $_width,
-                 $_height,
-                 $_accessor,
-                 $_sort,
-                 $_extents,
-                 $_extentDefault,
-                 $_domain,
-                 $_range,
-                 $accessor_d,
-                 $extents_d,
-                 $domain_d,
-                 $range_d,
-                 $_scaleFactory, $_scaleFactory_def
-             ]) => {
-                const props = {
-                    data: $_data,
-                    width: $_width,
-                    height: $_height,
-                    ordinal,
-                    accessor: $_accessor,
-                    sort: $_sort,
-                    extents: $_extents,
-                    extentDefault: $_extentDefault,
-                    domain: $_domain,
-                    range: $_range,
-                    accessor_d: $accessor_d,
-                    extents_d: $extents_d,
-                    domain_d: $domain_d,
-                    range_d: $range_d,
-                } satisfies ScaleInputsType<ROW, DOMAINTYPE, RANGETYPE>;
+	const xyzrExtents = derived(
+		[
+			_data,
+			pass1X?.accessor_d ?? constant(undefined),
+			pass1X?.extents ?? constant(undefined),
+			pass1Y?.accessor_d ?? constant(undefined),
+			pass1Y?.extents ?? constant(undefined),
+			pass1Z?.accessor_d ?? constant(undefined),
+			pass1Z?.extents ?? constant(undefined),
+			pass1R?.accessor_d ?? constant(undefined),
+			pass1R?.extents ?? constant(undefined),
+		],
+		([
+			$_data,
+			$_xAccessor,
+			$_xExtents,
+			$_yAccessor,
+			$_yExtents,
+			$_zAccessor,
+			$_zExtents,
+			$_rAccessor,
+			$_rExtents,
+		 ]) => {
+			const finderX = createFinderAccessor(!!pass1X?.ordinal, $_xAccessor, $_xExtents);
+			const finderY = createFinderAccessor(!!pass1Y?.ordinal, $_yAccessor, $_yExtents);
+			const finderZ = createFinderAccessor(!!pass1Z?.ordinal, $_zAccessor, $_zExtents);
+			const finderR = createFinderAccessor(!!pass1R?.ordinal, $_rAccessor, $_rExtents);
 
-                console.log(props);
+			const checkers = [finderX?.check, finderY?.check, finderZ?.check, finderR?.check].filter(check => !!check);
 
-                return ($_scaleFactory ?? $_scaleFactory_def)(props as any);
-            }
-        );
+			if (checkers.length !== 0) {
+				$_data.forEach(row => {
+					checkers.forEach(check => check(row))
+				})
+			}
 
-        const scaled_d = derived(
-            [accessor_d, scale_d],
-            ([$accessor_d, $scale_d]) => {
-                return ((row: ROW) => {
-                    const value = $accessor_d(row);
-                    if (Array.isArray(value)) {
-                        return value.map(v => $scale_d(v))
-                    }
-                    else {
-                        return $scale_d(value);
-                    }
-                }) as Scaler<ROW, RANGETYPE>
-            }
-        )
+			return {
+				x: finderX?.found,
+				y: finderY?.found,
+				z: finderZ?.found,
+				r: finderR?.found,
+			}
+		}
+	)
 
-        return {
-            ordinal,
-            accessor: _accessor,
-            sort: _sort,
-            extents: _extents,
-            extentDefault: _extentDefault,
-            domain: _domain,
-            range: _range,
-            scaleFactory: _scaleFactory,
-            accessor_d: accessor_d,
-            extents_d: extents_d,
-            domain_d: domain_d,
-            range_d: range_d,
-            scale_d: scale_d,
-            scaled_d: scaled_d
-        } satisfies AsStores<Merge<
-            DimensionOutputTypeOrdinal<ROW, DOMAINTYPE, RANGETYPE, SCALE>,
-            DimensionOutputTypeScalar<ROW, DOMAINTYPE, RANGETYPE, SCALE>
-        >>
-    }
+	const pass2X = genX.next(derived(xyzrExtents, $xyzrExtents => $xyzrExtents.x)).value;
+	const pass2Y = genY.next(derived(xyzrExtents, $xyzrExtents => $xyzrExtents.y)).value;
+	const pass2Z = genZ.next(derived(xyzrExtents, $xyzrExtents => $xyzrExtents.z)).value;
+	const pass2R = genR.next(derived(xyzrExtents, $xyzrExtents => $xyzrExtents.r)).value;
 
-    const _data = makeStore(data);
-    const _width = makeStore(width);
-    const _height = makeStore(height);
+	const result = {
+		data: _data,
+		width: _width,
+		height: _height,
+		meta: _meta,
+		x: pass2X,
+		y: pass2Y,
+		z: pass2Z,
+		r: pass2R
+	};
 
-    const _x = createDimension(x, {
-        range: derived(_width, $_width => [0, $_width] as [XRANGETYPE, XRANGETYPE]),
-        scaleFactory: (x.ordinal ? scaleBandFactory : scaleLinearFactory) as any
-    });
-
-    const _y = createDimension(y, {
-        range: derived(_height, $_height => [0, $_height] as [YRANGETYPE, YRANGETYPE]),
-        scaleFactory: (y.ordinal ? scaleBandFactory : scaleLinearFactory) as any
-    });
-
-    const _z = z ? createDimension(z, {
-        range: derived(_width, $_width => [0, $_width] as [ZRANGETYPE, ZRANGETYPE]),
-        scaleFactory: (z.ordinal ? scaleBandFactory : scaleLinearFactory) as any
-    }) : undefined;
-
-    const _r = r ? createDimension(r, {
-        range: [1 as RRANGETYPE, 25 as RRANGETYPE],
-        scaleFactory: (r.ordinal ? scaleBandFactory : scaleSqrtFactory) as any
-    }) : undefined;
-
-    return {
-        data: _data,
-        width: _width,
-        height: _height,
-        x: _x,
-        y: _y,
-        z: _z,
-        r: _r,
-    }
+	return result as never;
 }
