@@ -1,23 +1,36 @@
 <script lang="ts">
-	import { chart } from './workaround.js';
+	import { createChart } from '$lib/index.js';
 
-	const { data, width, height, x: { scaled_d: xGetScaled, scaler_d: xGetScaler }, y: { scaled_d: yGetScaled, scaler_d: yGetScaler, range_d: xRange }, data: d } = chart;
+	type R = { year: string, apples: number, bananas: number, cherries: number, dates: number }
+	const rdata: R[] = [
+		{year: '2019', apples: 3840, bananas: 1920, cherries: 960, dates: 400},
+		{year: '2018', apples: 1600, bananas: 1440, cherries: 960, dates: 400},
+		{year: '2017', apples: 820, bananas: 1000, cherries: 640, dates: 400},
+		{year: '2016', apples: 820, bananas: 560, cherries: 720, dates: 400}
+	];
+
+	const meta = {
+		myMeta: 'hello world'
+	}
+
+	export const chart = createChart({
+		data: rdata,
+		meta: meta,
+		width: 0,
+		height: 0,
+		x: {
+			ordinal: true,
+			accessor: 'year',
+		},
+		y: {
+			accessor: 'apples',
+			domain: [0, null]
+		}
+	});
+
+	const { data, width, height, x: { accessor_d: xAccessorD, scaled_d: xGetScaled, scaler_d: xGetScaler }, y: { scaled_d: yGetScaled, scaler_d: yGetScaler, range_d: xRange }, data: d } = chart;
 
 	$: console.log('info', $data, $xGetScaler);
-
-	/*
-	TODO: [y] Y coordinates need to be inverted somewhere.. I think? - e.g. a value of 0 should have a short column not a tall one.
-	TODO: [y] Create a vanilla stack chart in layercake and see what the diff is
-	TODO: [y] Simplify the scaleFactory prop type such that the syntax help is simpler
-	TODO: [y] Should return the scale type
-	TODO: [ ] Add option to reverse the range (default to true on the y coordinate)
-	TODO: [ ] Work out how to ensure custom scales work easily on ordinal scale factories
-	      [ ] Work out if the minimum domain type for all ordinal and all scalar are the same, if so, create two scale types...
-	TODO: [ ] Accessors arent typed properly, row is any? strings don't work...?
-	TODO: [ ] Use a DIMENSION template argument to group the various configurable aspects of a dimension
-	TODO: [ ] Calculate extents in one pass
-	TODO: [ ] Simplify types for better use in the create function
-	 */
 </script>
 <div class="w-[600px] h-[400px]">
 	<div bind:clientWidth={$width} bind:clientHeight={$height} class="w-full h-full">

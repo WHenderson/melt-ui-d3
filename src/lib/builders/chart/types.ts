@@ -59,6 +59,22 @@ export type InferAccessorOutput<ROW, ACCESSOR> =
 				)
 			: never;
 
+
+export type InferAccessorScaledOutput<ROW, ACCESSOR, RANGETYPE> =
+	ACCESSOR extends keyof ROW
+		? (
+			ROW[ACCESSOR] extends (infer DOMAINTYPE)[]
+				? AccessorScaledOutputOne<ROW, RANGETYPE>
+				: AccessorOutputOne<ROW, RANGETYPE>
+			)
+		: ACCESSOR extends (row: ROW) => infer RETURN
+			? (
+				RETURN extends (infer DOMAINTYPE)[]
+					? AccessorOutputMany<ROW, RANGETYPE>
+					: AccessorOutputOne<ROW, RANGETYPE>
+				)
+			: never;
+
 export type CompareFunc<VALUETYPE> = (a: VALUETYPE, b: VALUETYPE) => number;
 
 export type ExtentsInputScalar<DOMAINTYPE> =
@@ -244,7 +260,7 @@ export type DimensionOutput<
 		accessor_d: InferAccessorOutput<ROW, ACCESSOR>,
 		range_d: RangeOutput<RANGETYPE>,
 		scaler_d: SCALER,
-		scaled_d: AccessorScaledOutput<ROW, RANGETYPE>
+		scaled_d: InferAccessorScaledOutput<ROW, ACCESSOR, RANGETYPE>
 	}> &
 	(
 	[ORDINAL] extends [true]
