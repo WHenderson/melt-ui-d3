@@ -19,7 +19,7 @@ import type {
 	ExtentsOutputScalar,
 	InferDomainType,
 	Map2OptionalStore,
-	Map2Stores,
+	Map2Stores, MarginInput, MarginOutput, PaddingInput, PaddingOutput,
 	RangeInput,
 	RangeOutput,
 	Scaler,
@@ -127,6 +127,8 @@ export function createChart<
 	meta?: META,
 	width: number,
 	height: number,
+	margin?: MarginInput,
+	padding?: PaddingInput,
 	x: DimensionInput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
 	y: DimensionInput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>,
 	z?: DimensionInput<ROW, META, ZACCESSOR, ZORDINAL, ZRANGETYPE, ZSCALER>,
@@ -136,6 +138,10 @@ export function createChart<
 		data: ROW[],
 		width: number,
 		height: number,
+		margin: undefined | MarginInput,
+		padding: undefined | MarginInput,
+		margin_d: MarginOutput,
+		padding_d: PaddingOutput,
 	}> &
 	(
 		unknown extends META
@@ -168,6 +174,34 @@ export function createChart<
 	const _meta = makeStore(props.meta);
 	const _width = makeStore(props.width);
 	const _height = makeStore(props.height);
+	const _padding = makeStore(props.padding);
+	const _margin = makeStore(props.margin);
+	
+	const padding_d = derived(
+		_padding, 
+		$_padding => {
+			if (typeof $_padding === 'object')
+				return $_padding;
+			return {
+				top: $_padding ?? 0,
+				left: $_padding ?? 0,
+				bottom: $_padding ?? 0,
+				right: $_padding ?? 0,
+			}
+		})
+
+	const margin_d = derived(
+		_margin,
+		$_margin => {
+			if (typeof $_margin === 'object')
+				return $_margin;
+			return {
+				top: $_margin ?? 0,
+				left: $_margin ?? 0,
+				bottom: $_margin ?? 0,
+				right: $_margin ?? 0,
+			}
+		})
 
 	function * createDimension<ROW, META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>>(
 		props : Map2OptionalStore<{
@@ -311,9 +345,9 @@ export function createChart<
 					return set(order(range));
 
 				return derived(
-					[_width, _height],
-						([$_width, $_height]) =>
-							order(range({ width: $_width, height: $_height }))
+					[_width, _height, padding_d, margin_d],
+						([$_width, $_height, $padding_d, $margin_d]) =>
+							order(range({ width: $_width, height: $_height, padding: $padding_d, margin: $margin_d }))
 				).subscribe(set)
 			}
 		);
@@ -379,7 +413,7 @@ export function createChart<
 		{
 			extentDefault: 0 as never,
 			scalerFactory: (props.x.ordinal ? scaleFactoryBand : scaleFactoryLinear) as never,
-			range: ({ width }) => [0, width],
+			range: ({ width, padding, margin }) => [0, width - padding.left - padding.right - margin.left - margin.right],
 			reverse: false
 		}
 	);
@@ -388,7 +422,7 @@ export function createChart<
 	{
 			extentDefault: 0 as never,
 			scalerFactory: (props.y.ordinal ? scaleFactoryBand : scaleFactoryLinear) as never,
-			range: ({ height }) => [0, height],
+			range: ({ height, padding, margin }) => [0, height - padding.top - margin.top - padding.bottom - margin.bottom],
 			reverse: true
 		}
 	);
@@ -470,6 +504,10 @@ export function createChart<
 		data: _data,
 		width: _width,
 		height: _height,
+		padding: _padding,
+		margin: _margin,
+		padding_d: padding_d,
+		margin_d: margin_d,
 		meta: _meta,
 		x: pass2X,
 		y: pass2Y,

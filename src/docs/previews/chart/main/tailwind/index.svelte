@@ -18,6 +18,8 @@
 		meta: meta,
 		width: 0,
 		height: 0,
+		padding: 10,
+		margin: 20,
 		x: {
 			ordinal: true,
 			accessor: 'year',
@@ -28,22 +30,33 @@
 		}
 	});
 
-	const { data, width, height, x: { accessor_d: xAccessorD, scaled_d: xGetScaled, scaler_d: xGetScaler }, y: { scaled_d: yGetScaled, scaler_d: yGetScaler, range_d: xRange }, data: d } = chart;
+	const { data, width, height, padding_d, margin_d, x: { accessor_d: xAccessorD, scaled_d: xGetScaled, scaler_d: xGetScaler }, y: { scaled_d: yGetScaled, scaler_d: yGetScaler, range_d: xRange }, data: d } = chart;
 
 	$: console.log('info', $data, $xGetScaler);
+
+	/**
+	 * TODO:
+	 *  Add margins and padd, use g and transform to place into correct location...
+	 */
 </script>
 <div class="w-[600px] h-[400px]">
 	<div bind:clientWidth={$width} bind:clientHeight={$height} class="w-full h-full">
 			{#if typeof window !== 'undefined'}
 				<svg class="w-full h-full">
-					{#each $data as row, i}
-						{@const x = $xGetScaled(row)}
-						{@const y0 = $yGetScaler(0)}
-						{@const y = $yGetScaled(row)}
-						{@const w = $xGetScaler.bandwidth() }
+					<rect x={0} y={0} width={$width} height={$height} stroke="blue" fill="none" />
+					<rect x={$margin_d.left} y={$margin_d.top} width={$width - $margin_d.left - $margin_d.right} height={$height - $margin_d.top - $margin_d.bottom} stroke="blue" fill="none" />
+					<rect x={$margin_d.left + $padding_d.left} y={$margin_d.top + $padding_d.top} width={$width - $margin_d.left - $margin_d.right - $padding_d.left - $padding_d.right} height={$height - $margin_d.top - $margin_d.bottom - $padding_d.left - $padding_d.right} stroke="blue" fill="none" />
 
-						<rect x={x} y={y} width={w} height={y0 - y} stroke="green" class="fill-white stroke-magnum-800 stroke-[2px]"/>
-					{/each}
+					<g transform="translate({$margin_d.left + $padding_d.left}, {$margin_d.top + $padding_d.top})">
+						{#each $data as row, i}
+							{@const x = $xGetScaled(row)}
+							{@const y0 = $yGetScaler(0)}
+							{@const y = $yGetScaled(row)}
+							{@const w = $xGetScaler.bandwidth() }
+
+							<rect x={x} y={y} width={w} height={y0 - y} stroke="green" class="fill-white stroke-magnum-800 stroke-[2px]"/>
+						{/each}
+					</g>
 				</svg>
 			{/if}
 		</div>
