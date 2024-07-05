@@ -30,7 +30,7 @@
 		}
 	});
 
-	const { data, width, height, padding_d, margin_d, x: { accessor_d: xAccessorD, scaled_d: xGetScaled, scaler_d: xGetScaler }, y: { scaled_d: yGetScaled, scaler_d: yGetScaler, range_d: xRange }, data: d } = chart;
+	const { data, width, height, padding_d, margin_d, area_d, x: { accessor_d: xAccessorD, scaled_d: xGetScaled, scaler_d: xGetScaler }, y: { scaled_d: yGetScaled, scaler_d: yGetScaler, range_d: xRange }, data: d } = chart;
 
 	$: console.log('info', $data, $xGetScaler);
 
@@ -43,9 +43,9 @@
 	<div bind:clientWidth={$width} bind:clientHeight={$height} class="w-full h-full">
 			{#if typeof window !== 'undefined'}
 				<svg class="w-full h-full">
-					<rect x={0} y={0} width={$width} height={$height} stroke="blue" fill="none" />
-					<rect x={$margin_d.left} y={$margin_d.top} width={$width - $margin_d.left - $margin_d.right} height={$height - $margin_d.top - $margin_d.bottom} stroke="blue" fill="none" />
-					<rect x={$margin_d.left + $padding_d.left} y={$margin_d.top + $padding_d.top} width={$width - $margin_d.left - $margin_d.right - $padding_d.left - $padding_d.right} height={$height - $margin_d.top - $margin_d.bottom - $padding_d.left - $padding_d.right} stroke="blue" fill="none" />
+					<rect x={0} y={0} width={$area_d.width} height={$area_d.height} stroke="blue" fill="none" />
+					<rect x={$area_d.margin.left} y={$area_d.margin.top} width={$area_d.margin.innerWidth} height={$area_d.margin.innerHeight} stroke="blue" fill="none" />
+					<rect x={$area_d.margin.left + $area_d.padding.left} y={$area_d.margin.top + $area_d.padding.top} width={$area_d.padding.innerWidth} height={$area_d.padding.innerHeight} stroke="blue" fill="none" />
 
 					<g transform="translate({$margin_d.left + $padding_d.left}, {$margin_d.top + $padding_d.top})">
 						{#each $data as row, i}

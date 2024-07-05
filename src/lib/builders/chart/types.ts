@@ -7,37 +7,43 @@ export type StringValue = { toString(): string };
 
 export type ValidKeys<ROW, DOMAINTYPE> = { [k in keyof ROW]: ROW[k] extends DOMAINTYPE ? k : never }[keyof ROW];
 
-export type MarginInput =
+export type SidesInput =
 	number |
 	{
 		left: number,
 		top: number,
 		right: number,
 		bottom: number,
-	}
+	};
 
-export type MarginOutput = {
+export type SidesOutput = {
 	left: number,
-	top: number,
 	right: number,
+	width: number,
+
+	top: number,
 	bottom: number,
+	height: number
 }
 
+export type MarginInput = SidesInput;
 
-export type PaddingInput =
-	number |
-	{
-		left: number,
-		top: number,
-		right: number,
-		bottom: number,
-	}
+export type MarginOutput = SidesOutput;
 
-export type PaddingOutput = {
-	left: number,
-	top: number,
-	right: number,
-	bottom: number,
+export type PaddingInput = SidesInput;
+
+export type PaddingOutput = SidesOutput;
+
+export type InnerArea = {
+	innerWidth: number,
+	innerHeight: number,
+}
+
+export type AreaOutput = {
+	width: number,
+	height: number,
+	padding: PaddingOutput & InnerArea,
+	margin: MarginOutput & InnerArea,
 }
 
 export type DomainAccessorInputOne<ROW, DOMAINTYPE> =
@@ -159,7 +165,7 @@ export type DomainOutput<DOMAINTYPE> =
 	DomainOutputOrdinal<DOMAINTYPE>;
 
 export type RangeInputFunc<RANGETYPE> =
-	(({ width, height, padding, margin }: { width: number, height: number, padding: PaddingOutput, margin: MarginOutput }) => RangeOutput<RANGETYPE>);
+	((props: AreaOutput) => RangeOutput<RANGETYPE>);
 
 export type RangeInput<RANGETYPE> =
 	[RANGETYPE, RANGETYPE, ...RANGETYPE[]] |

@@ -3,6 +3,7 @@ import type {
 	AccessorInput,
 	AccessorOutput,
 	AccessorScaledOutput,
+	AreaOutput,
 	CompareFunc,
 	DimensionInput,
 	DimensionOutput,
@@ -19,11 +20,17 @@ import type {
 	ExtentsOutputScalar,
 	InferDomainType,
 	Map2OptionalStore,
-	Map2Stores, MarginInput, MarginOutput, PaddingInput, PaddingOutput,
+	Map2Stores,
+	MarginInput,
+	MarginOutput,
+	PaddingInput,
+	PaddingOutput,
 	RangeInput,
 	RangeOutput,
 	Scaler,
 	ScalerFactory,
+	SidesInput,
+	SidesOutput,
 	StringValue,
 } from './types.js';
 import { derived, type Readable } from 'svelte/store';
@@ -142,6 +149,7 @@ export function createChart<
 		padding: undefined | MarginInput,
 		margin_d: MarginOutput,
 		padding_d: PaddingOutput,
+		area_d: AreaOutput
 	}> &
 	(
 		unknown extends META
@@ -176,32 +184,59 @@ export function createChart<
 	const _height = makeStore(props.height);
 	const _padding = makeStore(props.padding);
 	const _margin = makeStore(props.margin);
-	
+
+
+	function computeSidesOutput(sides: SidesInput | undefined): SidesOutput {
+		if (typeof sides === 'object') {
+			return {
+				...sides,
+				width: sides.left + sides.right,
+				height: sides.top + sides.bottom
+			}
+		}
+
+		return {
+			left: sides ?? 0,
+			right: sides ?? 0,
+			width: (sides ?? 0) * 2,
+
+			top: sides ?? 0,
+			bottom: sides ?? 0,
+			height: (sides ?? 0) * 2,
+		}
+	}
+
 	const padding_d = derived(
 		_padding, 
-		$_padding => {
-			if (typeof $_padding === 'object')
-				return $_padding;
-			return {
-				top: $_padding ?? 0,
-				left: $_padding ?? 0,
-				bottom: $_padding ?? 0,
-				right: $_padding ?? 0,
-			}
-		})
+		$_padding =>
+			computeSidesOutput($_padding)
+	);
 
 	const margin_d = derived(
 		_margin,
-		$_margin => {
-			if (typeof $_margin === 'object')
-				return $_margin;
+		$_margin =>
+			computeSidesOutput($_margin)
+	);
+
+	const area_d = derived(
+		[_width, _height, margin_d, padding_d],
+		([$_width, $_height, $margin_d, $padding_d]) => {
 			return {
-				top: $_margin ?? 0,
-				left: $_margin ?? 0,
-				bottom: $_margin ?? 0,
-				right: $_margin ?? 0,
+				width: $_width,
+				height: $_height,
+				margin: {
+					...$margin_d,
+					innerWidth: $_width - $margin_d.left - $margin_d.right,
+					innerHeight:$_height - $margin_d.top - $margin_d.bottom,
+				},
+				padding: {
+					...$padding_d,
+					innerWidth: $_width - $margin_d.left - $margin_d.right - $padding_d.left - $padding_d.right,
+					innerHeight:$_height - $margin_d.top - $margin_d.bottom - $padding_d.top - $padding_d.bottom,
+				}
 			}
-		})
+		}
+	)
 
 	function * createDimension<ROW, META, DOMAINTYPE, RANGETYPE, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>>(
 		props : Map2OptionalStore<{
@@ -345,9 +380,9 @@ export function createChart<
 					return set(order(range));
 
 				return derived(
-					[_width, _height, padding_d, margin_d],
-						([$_width, $_height, $padding_d, $margin_d]) =>
-							order(range({ width: $_width, height: $_height, padding: $padding_d, margin: $margin_d }))
+					[area_d],
+						([$area_d]) =>
+							order(range($area_d))
 				).subscribe(set)
 			}
 		);
@@ -508,6 +543,7 @@ export function createChart<
 		margin: _margin,
 		padding_d: padding_d,
 		margin_d: margin_d,
+		area_d,
 		meta: _meta,
 		x: pass2X,
 		y: pass2Y,
