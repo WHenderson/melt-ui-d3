@@ -36,6 +36,130 @@ import type {
 import { derived, type Readable } from 'svelte/store';
 import { constant, createFinderAccessor, makeStore } from './util.js';
 import { scaleFactoryBand, scaleFactoryLinear, scaleFactorySqrt } from './scale.js';
+import type { XOR } from '../../internal/types.js';
+
+
+export type DimensionsInput<ROW, META, ACCESSORS extends AccessorInput<ROW>, ORDINALS extends boolean, RANGETYPES, SCALERS extends Scaler<InferDomainType<ROW, ACCESSORS>, RANGETYPES>> = {
+	[k in string]: DimensionInput<ROW, META, ACCESSORS, ORDINALS, RANGETYPES, SCALERS>
+}
+
+export function createChart2<
+	ROW,
+	META,
+
+	DIMENSIONS extends {
+		[k in string]:
+			k extends 'x'
+			? never
+			: k extends 'y'
+				? never
+				: DimensionInput<ROW, META, ACCESSORS, ORDINALS, RANGETYPES, SCALERS>
+	},
+
+
+	ACCESSORS extends AccessorInput<ROW>,
+	ORDINALS extends boolean,
+	RANGETYPES,
+	SCALERS extends Scaler<InferDomainType<ROW, ACCESSORS>, RANGETYPES>,
+
+	XACCESSOR extends AccessorInput<ROW>,
+
+	YACCESSOR extends AccessorInput<ROW>,
+
+
+	XORDINAL extends boolean = false,
+	XRANGETYPE = number,
+	XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> = (
+		XRANGETYPE extends number
+			? (
+				[XORDINAL] extends [true]
+					? (
+						InferDomainType<ROW, XACCESSOR> extends StringValue
+							? Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> & ScaleBand<InferDomainType<ROW, XACCESSOR>>
+							: never
+						)
+					: (
+						InferDomainType<ROW, XACCESSOR> extends NumberValue
+							? Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> & ScaleLinear<number, number, never>
+							: never
+						)
+				)
+			: never
+		),
+	YORDINAL extends boolean = false,
+	YRANGETYPE = number,
+	YSCALER extends Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> = (
+		YRANGETYPE extends number
+			? (
+				[YORDINAL] extends [true]
+					? (
+						InferDomainType<ROW, YACCESSOR> extends StringValue
+							? Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> & ScaleBand<InferDomainType<ROW, YACCESSOR>>
+							: never
+						)
+					: (
+						InferDomainType<ROW, YACCESSOR> extends NumberValue
+							? Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> & ScaleLinear<number, number, never>
+							: never
+						)
+				)
+			: never
+		),
+
+>(
+	props: Map2OptionalStore<{
+		data: ROW[],
+		meta?: META,
+		dimensions: {
+			x?: DimensionInput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
+			y?: DimensionInput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>
+		} & DIMENSIONS
+	}>
+): {
+	dims: DIMENSIONS,
+} &
+Map2Stores<{
+	data: ROW[],
+	meta: undefined | META,
+}> &
+	(
+		unknown extends META
+			? Map2Stores<{
+				meta: undefined,
+			}>
+			: Map2Stores<{
+				meta: META,
+			}>
+		) &
+	{
+		// { row: ROW[], m: META, a: XACCESSOR, o: XORDINAL, d: InferDomainType<ROW, XACCESSOR>, r: XRANGETYPE, s: XSCALER }
+	dimensions: {
+		[k in keyof DIMENSIONS | 'x' | 'y']:
+			k extends 'x'
+			? DimensionOutput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER> & { o2: XORDINAL }
+			: k extends 'y'
+			? DimensionOutput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER> & { o2: YORDINAL }
+			:
+				DIMENSIONS[k] extends DimensionInput<ROW, META, any, infer ORDINAL, infer RANGETYPE, infer SCALER>
+		?  DimensionOutput<ROW, META, DIMENSIONS[k]['accessor'], ORDINAL, RANGETYPE, SCALER> & { r: RANGETYPE }
+			//? (
+			//	k extends 'x'
+			//		? DimensionOutput<ROW, META, DIMENSIONS[k]['accessor'], ORDINAL, RANGETYPE, SCALER>
+			//		: DimensionOutput<ROW, META, DIMENSIONS[k]['accessor'], ORDINAL, RANGETYPE, SCALER>
+			//	)
+			: never;
+	},
+		y: {
+			o: YORDINAL,
+			a: YACCESSOR,
+			d: InferDomainType<ROW, YACCESSOR>
+			r: YRANGETYPE,
+			s: YSCALER
+		}
+}
+{
+	return null!;
+}
 
 export function createChart<
 	ROW,

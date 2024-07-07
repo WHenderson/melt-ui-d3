@@ -228,15 +228,16 @@ export type DimensionInput<
 	RANGETYPE,
 	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
 > =
-	{
+	Map2OptionalStore<{
 		accessor: ACCESSOR,
 		range?: RangeInput<RANGETYPE>,
 		reverse?: boolean,
-	} &
+	}> &
 	(
 		[ORDINAL] extends [true]
 			? {
-				ordinal: ORDINAL,
+				ordinal: true,
+				o?: 'ordinal input'
 			} &
 			Map2OptionalStore<{
 				sort?: CompareFunc<InferDomainType<ROW, ACCESSOR>>,
@@ -246,7 +247,8 @@ export type DimensionInput<
 				scalerFactory?: ScalerFactoryOrdinal<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>
 			}>
 			: {
-				ordinal?: false
+				ordinal?: ORDINAL,
+				o?: 'scalar input'
 			} &
 			Map2OptionalStore<{
 				sort?: undefined,
@@ -274,7 +276,8 @@ export type DimensionOutput<
 	(
 		[ORDINAL] extends [true]
 			? {
-			ordinal: ORDINAL,
+			ordinal: true,
+			o: 'ordinal output',
 		} &
 			Map2Stores<{
 				sort: undefined | CompareFunc<InferDomainType<ROW, ACCESSOR>>,
@@ -285,6 +288,7 @@ export type DimensionOutput<
 			}>
 			: {
 			ordinal?: false
+			o: 'scalar output',
 		} &
 			Map2Stores<{
 				sort: undefined,

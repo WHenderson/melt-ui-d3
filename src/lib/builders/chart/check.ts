@@ -1,4 +1,4 @@
-import { createChart } from './create.js';
+import { createChart, createChart2 } from './create.js';
 import type { DomainInputOrdinal, DomainInputScalar, DomainOutputOrdinal } from './types.js';
 import type { Readable } from 'svelte/store';
 
