@@ -226,7 +226,9 @@ export type DimensionInput<
 	ACCESSOR extends AccessorInput<ROW>,
 	ORDINAL extends boolean,
 	RANGETYPE,
-	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
+	FACTORY extends ScalerFactory<META, DOMAINTYPE, RANGETYPE, SCALER>,
+	SCALER extends Scaler<DOMAINTYPE, RANGETYPE>,
+	DOMAINTYPE = InferDomainType<ROW, ACCESSOR>,
 > =
 	Map2OptionalStore<{
 		accessor: ACCESSOR,
@@ -244,7 +246,11 @@ export type DimensionInput<
 				extents?: ExtentsInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
 				extentDefault?: undefined,
 				domain?: DomainInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
-				scalerFactory?: ScalerFactoryOrdinal<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>
+				scalerFactory?:
+					FACTORY extends ScalerFactoryOrdinal<META, DOMAINTYPE, RANGETYPE, SCALER>
+					? FACTORY
+					: never
+
 			}>
 			: {
 				ordinal?: ORDINAL,
@@ -255,7 +261,10 @@ export type DimensionInput<
 				extents?: ExtentsInputScalar<InferDomainType<ROW, ACCESSOR>>,
 				extentDefault?: InferDomainType<ROW, ACCESSOR>
 				domain?: DomainInputScalar<InferDomainType<ROW, ACCESSOR>>,
-				scalerFactory?: ScalerFactoryScalar<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>,
+				scalerFactory?:
+						FACTORY extends ScalerFactoryScalar<META, DOMAINTYPE, RANGETYPE, SCALER>
+						? FACTORY
+					  : never,
 			}>
 	)
 
@@ -265,7 +274,8 @@ export type DimensionOutput<
 	ACCESSOR extends AccessorInput<ROW>,
 	ORDINAL extends boolean,
 	RANGETYPE,
-	SCALER extends Scaler<InferDomainType<ROW, ACCESSOR>, RANGETYPE>
+	SCALER extends Scaler<DOMAINTYPE, RANGETYPE>,
+	DOMAINTYPE = InferDomainType<ROW, ACCESSOR>
 > =
 	// input
 	Map2Stores<{
@@ -280,11 +290,11 @@ export type DimensionOutput<
 			o: 'ordinal output',
 		} &
 			Map2Stores<{
-				sort: undefined | CompareFunc<InferDomainType<ROW, ACCESSOR>>,
-				extents: undefined | ExtentsInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
+				sort: undefined | CompareFunc<DOMAINTYPE>,
+				extents: undefined | ExtentsInputOrdinal<DOMAINTYPE>,
 				extentDefault: undefined,
-				domain: undefined | DomainInputOrdinal<InferDomainType<ROW, ACCESSOR>>,
-				scalerFactory: undefined | ScalerFactoryOrdinal<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>
+				domain: undefined | DomainInputOrdinal<DOMAINTYPE>,
+				scalerFactory: undefined | ScalerFactoryOrdinal<META, DOMAINTYPE, RANGETYPE, SCALER>
 			}>
 			: {
 			ordinal?: false
@@ -292,10 +302,10 @@ export type DimensionOutput<
 		} &
 			Map2Stores<{
 				sort: undefined,
-				extents: undefined | ExtentsInputScalar<InferDomainType<ROW, ACCESSOR>>,
-				extentDefault: undefined | InferDomainType<ROW, ACCESSOR>
-				domain: undefined | DomainInputScalar<InferDomainType<ROW, ACCESSOR>>,
-				scalerFactory: undefined | ScalerFactoryScalar<META, InferDomainType<ROW, ACCESSOR>, RANGETYPE, SCALER>,
+				extents: undefined | ExtentsInputScalar<DOMAINTYPE>,
+				extentDefault: undefined | DOMAINTYPE
+				domain: undefined | DomainInputScalar<DOMAINTYPE>,
+				scalerFactory: undefined | ScalerFactoryScalar<META, DOMAINTYPE, RANGETYPE, SCALER>,
 			}>
 		) &
 	// output
@@ -308,12 +318,12 @@ export type DimensionOutput<
 	(
 	[ORDINAL] extends [true]
 		? Map2Stores<{
-			extents_d: ExtentsOutputOrdinal<InferDomainType<ROW, ACCESSOR>>,
-			domain_d: DomainOutputOrdinal<InferDomainType<ROW, ACCESSOR>>,
+			extents_d: ExtentsOutputOrdinal<DOMAINTYPE>,
+			domain_d: DomainOutputOrdinal<DOMAINTYPE>,
 
 		}>
 		: Map2Stores<{
-			extents_d: ExtentsOutputScalar<InferDomainType<ROW, ACCESSOR>>,
-			domain_d: DomainOutputScalar<InferDomainType<ROW, ACCESSOR>>,
+			extents_d: ExtentsOutputScalar<DOMAINTYPE>,
+			domain_d: DomainOutputScalar<DOMAINTYPE>,
 		}>
 	)

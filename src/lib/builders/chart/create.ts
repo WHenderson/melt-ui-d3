@@ -8,12 +8,12 @@ import type {
 	DimensionInput,
 	DimensionOutput,
 	DomainAccessorInput,
-	DomainInput,
+	DomainInput, DomainInputOrdinal,
 	DomainInputOrdinalFunc,
 	DomainInputScalarFunc,
 	DomainOutput,
 	DomainOutputScalar,
-	ExtentsInput,
+	ExtentsInput, ExtentsInputOrdinal,
 	ExtentsInputScalar,
 	ExtentsOutput,
 	ExtentsOutputOrdinal,
@@ -28,7 +28,7 @@ import type {
 	RangeInput,
 	RangeOutput,
 	Scaler,
-	ScalerFactory,
+	ScalerFactory, ScalerFactoryOrdinal,
 	SidesInput,
 	SidesOutput,
 	StringValue,
@@ -43,6 +43,41 @@ export type DimensionsInput<ROW, META, ACCESSORS extends AccessorInput<ROW>, ORD
 	[k in string]: DimensionInput<ROW, META, ACCESSORS, ORDINALS, RANGETYPES, SCALERS>
 }
 
+export function createOrdinal<
+	ROW, 
+	META, 
+	ACCESSOR extends AccessorInput<ROW>,
+	RANGETYPE, 
+	SCALER extends Scaler<DOMAINTYPE, RANGETYPE>,
+	DOMAINTYPE = InferDomainType<ROW, ACCESSOR>,
+>(
+	props: Map2OptionalStore<{
+		accessor: ACCESSOR,
+		range?: RangeInput<RANGETYPE>,
+		reverse?: boolean,
+		sort?: CompareFunc<DOMAINTYPE>,
+		extents?: ExtentsInputOrdinal<DOMAINTYPE>,
+		extentDefault?: undefined,
+		domain?: DomainInputOrdinal<DOMAINTYPE>,
+		scalerFactory?: ScalerFactoryOrdinal<META, DOMAINTYPE, RANGETYPE, SCALER>
+	}>
+): Map2OptionalStore<{
+	ordinal: true,
+	accessor: ACCESSOR,
+	range?: RangeInput<RANGETYPE>,
+	reverse?: boolean,
+	sort?: CompareFunc<DOMAINTYPE>,
+	extents?: ExtentsInputOrdinal<DOMAINTYPE>,
+	extentDefault?: undefined,
+	domain?: DomainInputOrdinal<DOMAINTYPE>,
+	scalerFactory?: ScalerFactoryOrdinal<META, DOMAINTYPE, RANGETYPE, SCALER>
+}> {
+	return {
+		ordinal: true,
+		...props
+	}
+}
+
 export function createChart2<
 	ROW,
 	META,
@@ -53,34 +88,39 @@ export function createChart2<
 			? never
 			: k extends 'y'
 				? never
-				: DimensionInput<ROW, META, ACCESSORS, ORDINALS, RANGETYPES, SCALERS>
+				: DimensionInput<ROW, META, ACCESSORS, ORDINALS, RANGETYPES, FACTORIES, SCALERS, DOMAINTYPES>
 	},
 
 
 	ACCESSORS extends AccessorInput<ROW>,
 	ORDINALS extends boolean,
 	RANGETYPES,
-	SCALERS extends Scaler<InferDomainType<ROW, ACCESSORS>, RANGETYPES>,
+	FACTORIES extends ScalerFactory<META, DOMAINTYPES, RANGETYPES, SCALERS>,
+	SCALERS extends Scaler<DOMAINTYPES, RANGETYPES>,
 
 	XACCESSOR extends AccessorInput<ROW>,
+	XFACTORY extends ScalerFactory<META, XDOMAINTYPE, XRANGETYPE, XSCALER>,
 
 	YACCESSOR extends AccessorInput<ROW>,
+	YFACTORY extends ScalerFactory<META, YDOMAINTYPE, YRANGETYPE, YSCALER>,
 
+	DOMAINTYPES = InferDomainType<ROW, ACCESSORS>,
 
 	XORDINAL extends boolean = false,
 	XRANGETYPE = number,
-	XSCALER extends Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> = (
+	XDOMAINTYPE = InferDomainType<ROW, InferDomainType<ROW, XACCESSOR>>,
+	XSCALER extends Scaler<XDOMAINTYPE, XRANGETYPE> = (
 		XRANGETYPE extends number
 			? (
 				[XORDINAL] extends [true]
 					? (
-						InferDomainType<ROW, XACCESSOR> extends StringValue
-							? Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> & ScaleBand<InferDomainType<ROW, XACCESSOR>>
+						XDOMAINTYPE extends StringValue
+							? Scaler<XDOMAINTYPE, XRANGETYPE> & ScaleBand<XDOMAINTYPE>
 							: never
 						)
 					: (
-						InferDomainType<ROW, XACCESSOR> extends NumberValue
-							? Scaler<InferDomainType<ROW, XACCESSOR>, XRANGETYPE> & ScaleLinear<number, number, never>
+						XDOMAINTYPE extends NumberValue
+							? Scaler<XDOMAINTYPE, XRANGETYPE> & ScaleLinear<number, number, never>
 							: never
 						)
 				)
@@ -88,18 +128,19 @@ export function createChart2<
 		),
 	YORDINAL extends boolean = false,
 	YRANGETYPE = number,
-	YSCALER extends Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> = (
+	YDOMAINTYPE = InferDomainType<ROW, InferDomainType<ROW, YACCESSOR>>,
+	YSCALER extends Scaler<YDOMAINTYPE, YRANGETYPE> = (
 		YRANGETYPE extends number
 			? (
 				[YORDINAL] extends [true]
 					? (
-						InferDomainType<ROW, YACCESSOR> extends StringValue
-							? Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> & ScaleBand<InferDomainType<ROW, YACCESSOR>>
+						YDOMAINTYPE extends StringValue
+							? Scaler<YDOMAINTYPE, YRANGETYPE> & ScaleBand<YDOMAINTYPE>
 							: never
 						)
 					: (
-						InferDomainType<ROW, YACCESSOR> extends NumberValue
-							? Scaler<InferDomainType<ROW, YACCESSOR>, YRANGETYPE> & ScaleLinear<number, number, never>
+						YDOMAINTYPE extends NumberValue
+							? Scaler<YDOMAINTYPE, YRANGETYPE> & ScaleLinear<number, number, never>
 							: never
 						)
 				)
@@ -111,8 +152,8 @@ export function createChart2<
 		data: ROW[],
 		meta?: META,
 		dimensions: {
-			x?: DimensionInput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XSCALER>,
-			y?: DimensionInput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER>
+			x?: DimensionInput<ROW, META, XACCESSOR, XORDINAL, XRANGETYPE, XFACTORY, XSCALER, XDOMAINTYPE>,
+			y?: DimensionInput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YFACTORY, YSCALER, YDOMAINTYPE>
 		} & DIMENSIONS
 	}>
 ): {
@@ -140,7 +181,7 @@ Map2Stores<{
 			: k extends 'y'
 			? DimensionOutput<ROW, META, YACCESSOR, YORDINAL, YRANGETYPE, YSCALER> & { o2: YORDINAL }
 			:
-				DIMENSIONS[k] extends DimensionInput<ROW, META, any, infer ORDINAL, infer RANGETYPE, infer SCALER>
+				DIMENSIONS[k] extends DimensionInput<ROW, META, any, infer ORDINAL, infer RANGETYPE, infer FACTORY, infer SCALER, infer DOMAINTYPE>
 		?  DimensionOutput<ROW, META, DIMENSIONS[k]['accessor'], ORDINAL, RANGETYPE, SCALER> & { r: RANGETYPE }
 			//? (
 			//	k extends 'x'

@@ -1,6 +1,13 @@
 import { createChart, createChart2 } from './create.js';
-import type { DomainInputOrdinal, DomainInputScalar, DomainOutputOrdinal, DomainOutputScalar } from './types.js';
+import type {
+	DomainInputOrdinal,
+	DomainInputScalar,
+	DomainOutputOrdinal,
+	DomainOutputScalar,
+	RangeOutput, Scaler, ScalerFactoryOrdinal,
+} from './types.js';
 import type { Readable } from 'svelte/store';
+import { scaleFactoryBand, scaleFactoryLinear } from './scale.js';
 
 type IsEqual<A,B> = [A] extends [B] ? true : false;
 type Contains<C, M> = M extends keyof C ? true : false;
@@ -26,13 +33,25 @@ const meta = {
 		//width: 0,
 		//height: 0,
 		dimensions: {
-			x: {
+			x: { // add additional creation functions that provide easier type inference?
 				ordinal: true,
 				accessor: 'year',
 			},
 			y: {
 				accessor: 'apples'
-			}
+			}, 
+			xx: {
+				ordinal: true,
+				accessor: 'year',
+				domain: ['a','b'],
+				range: props => [0,1],
+				//scalerFactory: scaleFactoryBand<string>
+				//scalerFactory: <ScalerFactoryOrdinal<{   myMeta: string }, string, number, Scaler<string, number>>>scaleFactoryBand<string>
+				//scalerFactory: props => <any>null!
+			},
+			//yy: {
+			//	accessor: 'apples'
+			//}
 		}
 	});
 
@@ -43,20 +62,46 @@ const meta = {
 
 	type HasMeta = Assert<IsEqual<typeof result.meta, Readable<typeof meta>>, true>;
 
-	const ix = result.dims.x.ordinal;
-	const iy = result.dims.y;
+	(() => {
 
+		const {
+			dims: {
+				xx: {
+					ordinal,
+					accessor,
+					domain,
+					range,
+					scalerFactory
+				}
+			}
+		} = result;
+	})();
 
-	const yo = result.y;
+	(() => {
 
-	const x = result.dimensions.x;
-	const xx = result.dimensions.x.ordinal;
-	const xxx = result.dimensions.x.o;
-	const xxxx = result.dimensions.x.o2;
-	const y = result.dimensions.y;
-	const yy = result.dimensions.y.ordinal;
-	const yyy = result.dimensions.y.o;
-	const yyyy = result.dimensions.y.o2;
+		const {
+			dimensions: {
+				xx: {
+					ordinal,
+					o,
+					accessor,
+					range,
+					reverse,
+					sort,
+					extents,
+					extentDefault,
+					domain,
+					scalerFactory,
+					accessor_d,
+					range_d,
+					scaler_d,
+					scaled_d,
+					extents_d,
+					domain_d
+				}
+			}
+		} = result;
+	})();
 
 
 
@@ -72,8 +117,17 @@ const meta = {
 	type YDomain = Assert<IsEqual<InferContent<typeof result.dimensions.y.domain>, DomainInputScalar<number> | undefined>, true>
 	type YDomainD = Assert<IsEqual<InferContent<typeof result.dimensions.y.domain_d>, DomainOutputScalar<number>>, true>;
 
+	type XXOrdinal = Assert<IsEqual<typeof result.dimensions.xx.ordinal, true>, true>;
+	type XXAccessorInput = Assert<IsEqual<Parameters<InferContent<typeof result.dimensions.xx.accessor_d>>, [Row]>, true>;
+	type XXAccessorReturn = Assert<IsEqual<ReturnType<InferContent<typeof result.dimensions.xx.accessor_d>>, string>, true>;
+	type XXDomain = Assert<IsEqual<InferContent<typeof result.dimensions.xx.domain>, DomainInputOrdinal<string> | undefined>, true>
+	type XXDomainD = Assert<IsEqual<InferContent<typeof result.dimensions.xx.domain_d>, DomainOutputOrdinal<string>>, true>
+	type XXRangeD = Assert<IsEqual<InferContent<typeof result.dimensions.xx.range_d>, RangeOutput<number>>, true>
+	
+	
 	type HasDefaultXScaler = Assert<Contains<InferContent<typeof result.dimensions.x.scaler_d>, 'bandwidth'>, true>;
 	type HasDefaultYScaler = Assert<Contains<InferContent<typeof result.dimensions.y.scaler_d>, 'interpolate'>, true>;
+	type HasDefaultXXScaler = Assert<Contains<InferContent<typeof result.dimensions.xx.scaler_d>, 'interpolate'>, true>;
 
 }
 
