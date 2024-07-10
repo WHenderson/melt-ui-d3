@@ -58,6 +58,7 @@ export type DimensionContinuousPartial<META, DOMAINTYPE extends DOMAINSIMPLETYPE
 
 export type DimensionContinuous<ROW, META, DOMAINTYPE extends DOMAINSIMPLETYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER extends Scaler<DOMAINSIMPLETYPE, RANGETYPE>> =
 	{
+		discrete?: false;
 		accessor: Accessor<ROW, META, DOMAINTYPE>;
 		range?: Range<RANGETYPE, META>;
 		reverse?: Reverse<META>;

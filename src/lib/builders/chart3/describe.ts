@@ -10,28 +10,29 @@ import { scalerFactoryBand, scalerFactoryLinear, scalerFactorySqrt } from './sca
 import type { StringValue } from './types-util.js';
 import type { NumberValue } from 'd3-scale';
 
-const h_range = ({ area }: { area: Area}) => [0, area.padding.inner.width] as [number, number];
+export const h_range = ({ area }: { area: Area}) => [0, area.padding.inner.width] as [number, number];
 
-const h_discrete = {
+export const h_discrete = {
 	range: h_range,
 	scalerFactory: scalerFactoryBand
 }
 
-const h_continuous = {
+export const h_continuous = {
 	range: h_range,
 	extentDefault: 0,
 	scalerFactory: scalerFactoryLinear
 }
 
-const v_range = ({ area }: { area: Area}) => [0, area.padding.inner.height] as [number, number];
+export const v_range = ({ area }: { area: Area}) => [0, area.padding.inner.height] as [number, number];
 
-const v_discrete = {
+export const v_discrete = {
 	range: v_range,
 	scalerFactory: scalerFactoryBand
 }
 
-const v_continuous = {
+export const v_continuous = {
 	range: v_range,
+	extentDefault: 0,
 	scalerFactory: scalerFactoryLinear
 }
 
@@ -46,43 +47,45 @@ type InferDomain<ROW, ACCESSOR> =
 	)
 	: never
 ;
+type InferDomainIsSimple<ROW, ACCESSOR, SIMPLEDOMAINTYPE> = 
+	InferDomain<ROW, ACCESSOR> extends SIMPLEDOMAINTYPE
+		? InferDomain<ROW, ACCESSOR>
+		: never;
 
 export function describeChart<ROW, META, CHART extends ChartBasics<ROW, META>>(
 	props: ChartBasics<ROW, META> & CHART
 ) : CHART & {
 	dimensions: object;
 	describeDiscrete: (
-		<THIS extends { dimensions: object }, NAME extends string, ACCESSOR extends Accessor<ROW, META, DOMAINTYPE>, DIMENSION extends DimensionDiscretePartial<META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>, SCALER extends Scaler<DOMAINSIMPLETYPE, RANGETYPE>, DOMAINTYPE extends DOMAINSIMPLETYPE, RANGETYPE, DOMAINSIMPLETYPE extends StringValue>
-		(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DimensionDiscretePartial<META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER> & DIMENSION)
-			=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR, discrete: true, dt: InferDomain<ROW, ACCESSOR>, rt: RANGETYPE } } }
+		<THIS extends { dimensions: object }, NAME extends string, ACCESSOR extends Accessor<ROW, META, unknown>, DIMENSION extends DimensionDiscretePartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, RANGETYPE, DOMAINSIMPLETYPE, SCALER>, SCALER extends Scaler<DOMAINSIMPLETYPE, RANGETYPE>, RANGETYPE, DOMAINSIMPLETYPE extends StringValue>
+		(this: THIS, name: NAME, accessor: ACCESSOR, dimension: DimensionDiscretePartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, RANGETYPE, DOMAINSIMPLETYPE, SCALER> & DIMENSION)
+			=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR, discrete: true, idt: InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, sdt: DOMAINSIMPLETYPE, rt: RANGETYPE } } }
 	);
 	describeContinuous: (
-		<THIS extends { dimensions: object }, NAME extends string, ACCESSOR extends Accessor<ROW, META, DOMAINTYPE>, DIMENSION extends DimensionContinuousPartial<META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>, SCALER extends Scaler<DOMAINSIMPLETYPE, RANGETYPE>, DOMAINTYPE extends DOMAINSIMPLETYPE, RANGETYPE, DOMAINSIMPLETYPE extends NumberValue >
-		(this: THIS, name: NAME, accessor: ACCESSOR, dimension: DimensionContinuousPartial<META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER> & DIMENSION)
+		<THIS extends { dimensions: object }, NAME extends string, ACCESSOR extends Accessor<ROW, META, unknown>, DIMENSION extends DimensionContinuousPartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, RANGETYPE, DOMAINSIMPLETYPE, SCALER>, SCALER extends Scaler<DOMAINSIMPLETYPE, RANGETYPE>, RANGETYPE, DOMAINSIMPLETYPE extends NumberValue>
+		(this: THIS, name: NAME, accessor: ACCESSOR, dimension: DimensionContinuousPartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, RANGETYPE, DOMAINSIMPLETYPE, SCALER> & DIMENSION)
 			=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR } } }
 	);
-
-	// inferrance not working on these :-P
-	//describeDiscreteHorizontal: (
-	//	<THIS extends { dimensions: object }, NAME extends string, DOMAINTYPE extends StringValue, ACCESSOR extends Accessor<ROW, META, DOMAINTYPE>, DIMENSION extends DimensionDiscretePartial<META, DOMAINTYPE, number, SCALER>, SCALER extends Scaler<DOMAINTYPE, number> = ReturnType<typeof h_discrete['scalerFactory']>>
-	//	(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DIMENSION)
-	//		=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR, discrete: true, dt: DOMAINTYPE } } }
-	//	);
-	//describeContinuousHorizontal: (
-	//	<THIS, NAME extends string, ACCESSOR extends Accessor<ROW, META, DOMAINTYPE>, DIMENSION extends Partial<DimensionContinuousPartial<META, DOMAINTYPE, number, SCALER>>, DOMAINTYPE extends NumberValue, SCALER extends Scaler<DOMAINTYPE, number> = ReturnType<typeof h_continuous['scalerFactory']>>
-	//	(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DIMENSION)
-	//		=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR } } }
-	//	);
-	//describeDiscreteVertical: (
-	//	<THIS , NAME extends string, ACCESSOR extends Accessor<ROW, META, DOMAINTYPE>, DIMENSION extends Partial<DimensionDiscretePartial<META, DOMAINTYPE, number, SCALER>>, DOMAINTYPE extends StringValue, SCALER extends Scaler<DOMAINTYPE, number> = ReturnType<typeof v_discrete['scalerFactory']>>
-	//	(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DIMENSION)
-	//		=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR, discrete: true } } }
-	//	);
-	//describeContinuousVertical: (
-	//	<THIS, NAME extends string, ACCESSOR extends Accessor<ROW, META, DOMAINTYPE>, DIMENSION extends Partial<DimensionContinuousPartial<META, DOMAINTYPE, number, SCALER>>, DOMAINTYPE extends NumberValue, SCALER extends Scaler<DOMAINTYPE, number> = ReturnType<typeof v_continuous['scalerFactory']>>
-	//	(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DIMENSION)
-	//		=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR } } }
-	//	);
+	describeDiscreteHorizontal: (
+		<THIS extends { dimensions: object }, NAME extends string, ACCESSOR extends Accessor<ROW, META, unknown>, DIMENSION extends DimensionDiscretePartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, number, DOMAINSIMPLETYPE, SCALER>, DOMAINSIMPLETYPE extends StringValue, SCALER extends Scaler<DOMAINSIMPLETYPE, number> = ReturnType<typeof h_discrete['scalerFactory']>>
+		(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DimensionDiscretePartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, number, DOMAINSIMPLETYPE, SCALER> & DIMENSION)
+			=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR, discrete: true, idt: InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, sdt: DOMAINSIMPLETYPE } } }
+	);
+	describeContinuousHorizontal: (
+		<THIS extends { dimensions: object }, NAME extends string, ACCESSOR extends Accessor<ROW, META, unknown>, DIMENSION extends DimensionContinuousPartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, number, DOMAINSIMPLETYPE, SCALER>, DOMAINSIMPLETYPE extends NumberValue, SCALER extends Scaler<DOMAINSIMPLETYPE, number> = ReturnType<typeof h_continuous['scalerFactory']>>
+		(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DimensionContinuousPartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, number, DOMAINSIMPLETYPE, SCALER> & DIMENSION)
+			=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR, discrete: true, idt: InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, sdt: DOMAINSIMPLETYPE } } }
+	);
+	describeDiscreteVertical: (
+		<THIS extends { dimensions: object }, NAME extends string, ACCESSOR extends Accessor<ROW, META, unknown>, DIMENSION extends DimensionDiscretePartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, number, DOMAINSIMPLETYPE, SCALER>, DOMAINSIMPLETYPE extends StringValue, SCALER extends Scaler<DOMAINSIMPLETYPE, number> = ReturnType<typeof v_discrete['scalerFactory']>>
+		(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DimensionDiscretePartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, number, DOMAINSIMPLETYPE, SCALER> & DIMENSION)
+			=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR, discrete: true, idt: InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, sdt: DOMAINSIMPLETYPE } } }
+		);
+	describeContinuousVertical: (
+		<THIS extends { dimensions: object }, NAME extends string, ACCESSOR extends Accessor<ROW, META, unknown>, DIMENSION extends DimensionContinuousPartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, number, DOMAINSIMPLETYPE, SCALER>, DOMAINSIMPLETYPE extends NumberValue, SCALER extends Scaler<DOMAINSIMPLETYPE, number> = ReturnType<typeof v_continuous['scalerFactory']>>
+		(this: THIS, name: NAME, accessor: ACCESSOR, dimension?: DimensionContinuousPartial<META, InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, number, DOMAINSIMPLETYPE, SCALER> & DIMENSION)
+			=> THIS & { dimensions: { [k in NAME]: DIMENSION & { accessor: ACCESSOR, discrete: true, idt: InferDomainIsSimple<ROW, ACCESSOR, DOMAINSIMPLETYPE>, sdt: DOMAINSIMPLETYPE } } }
+		);
 } {
 	return {
 		...props,
@@ -113,18 +116,18 @@ export function describeChart<ROW, META, CHART extends ChartBasics<ROW, META>>(
 				}
 			} as never // typescript is treating name as a string instead of NAME
 		},
-		//describeDiscreteHorizontal(name, accessor, dimension) {
-		//	return (this as any).describeDiscrete(this, name, accessor, Object.assign({}, h_discrete, dimension));
-		//},
-		//describeContinuousHorizontal(name, accessor, dimension) {
-		//	return (this as any).describeContinuous(this, name, accessor, Object.assign({}, h_continuous, dimension));
-		//},
-		//describeDiscreteVertical(name, accessor, dimension) {
-		//	return (this as any).describeDiscrete(this, name, accessor, Object.assign({}, v_discrete, dimension));
-		//},
-		//describeContinuousVertical(name, accessor, dimension) {
-		//	return (this as any).describeContinuous(this, name, accessor, Object.assign({}, v_continuous, dimension));
-		//}
+		describeDiscreteHorizontal(name, accessor, dimension) {
+			return (this as any).describeDiscrete(this, name, accessor, Object.assign({}, h_discrete, dimension));
+		},
+		describeContinuousHorizontal(name, accessor, dimension) {
+			return (this as any).describeContinuous(this, name, accessor, Object.assign({}, h_continuous, dimension));
+		},
+		describeDiscreteVertical(name, accessor, dimension) {
+			return (this as any).describeDiscrete(this, name, accessor, Object.assign({}, v_discrete, dimension));
+		},
+		describeContinuousVertical(name, accessor, dimension) {
+			return (this as any).describeContinuous(this, name, accessor, Object.assign({}, v_continuous, dimension));
+		}
 	}
 }
 
@@ -136,22 +139,36 @@ const r = describeChart({
 	width: 10,
 	height: 12
 })
+
 	.describeDiscrete('a1', 'a', { range: [1, 25] })
-	.describeDiscrete('a2', row => row.a, { range: [1, 25] })
-	.describeDiscrete('a3', row => [1,2,3], { range: [1, 25] })
-	.describeDiscrete('a4', row => ['1','2','3'], { range: [1, 25] })
+
+	//.describeDiscrete('a2', row => row.a, { range: [1, 25] })
+	//.describeDiscrete('a3', row => [1,2,3], { range: [1, 25] })
+	//.describeDiscrete('a4', row => ['1','2','3'], { range: [1, 25] })
 	.describeDiscrete('a5', 'a', { range: [1, 25], scalerFactory: scalerFactoryBand })
+	//.describeDiscrete('a6', 'a', { range: h_range, scalerFactory: scalerFactoryBand })
+	//.describeContinuous('a6', 'a', { extentDefault: 0, range: h_range, scalerFactory: scalerFactoryLinear })
+	//.describeContinuous('a7', 'a', { extentDefault: 0, range: h_range, scalerFactory: scalerFactoryLinear })
+	//.describeContinuous('a7', 'a', h_continuous)
+	//.describeContinuous('a7', 'a', h_continuous)
 	//.describeDiscrete('x', 'a', { range: h_range, scalerFactory: scalerFactoryBand })
 	//.describeDiscreteHorizontal('x5', row => row.a)
 	//.describeDiscreteVertical('y', 'y')
 	//.describeContinuous('z', row => row.a, h_continuous)
 
+	.describeDiscreteHorizontal('x1', 'y')
+
+
+	//.describeContinuousVertical('y1', 'a')
+
+
 const {
 	a1,
-	a2,
-	a3,
-	a4,
+	a5,
+	x1
 } = r.dimensions;
 
-const dimension = a4;
+const da1 = a1;
+const da5 = a5;
+const dx1 = x1;
 
