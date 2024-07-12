@@ -3,7 +3,8 @@ import type { Area } from './types-basic.js';
 
 export const h_range = ({ area }: { area: Area}) => [0, area.padding.inner.width] as [number, number];
 
-export const h_discrete = {
+export const h_band = {
+	discrete: true,
 	range: h_range,
 	scalerFactory: scalerFactoryBand<string>
 }
@@ -15,7 +16,8 @@ export const h_linear = {
 
 export const v_range = ({ area }: { area: Area}) => [0, area.padding.inner.height] as [number, number];
 
-export const v_discrete = {
+export const v_band = {
+	discrete: true,
 	range: v_range,
 	scalerFactory: scalerFactoryBand<string>
 }
