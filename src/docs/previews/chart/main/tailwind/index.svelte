@@ -20,17 +20,36 @@
 		height: 0,
 		padding: 10,
 		margin: 20,
-		x: {
-			ordinal: true,
-			accessor: 'year',
-		},
-		y: {
-			accessor: 'apples',
-			domain: [0, null]
+		dimensions: {
+			x: {
+				ordinal: true,
+				accessor: 'year',
+			},
+			y: {
+				accessor: 'apples',
+				domain: [0, null]
+			}
 		}
 	});
 
-	const { data, width, height, padding_d, margin_d, area_d, x: { accessor_d: xAccessorD, scaled_d: xGetScaled, scaler_d: xGetScaler }, y: { scaled_d: yGetScaled, scaler_d: yGetScaler, range_d: xRange }, data: d } = chart;
+	const {
+		data,
+		width,
+		height,
+		area_d,
+		dimensions: {
+			x: {
+				accessor_d: xAccessorD,
+				scaled_d: xGetScaled,
+				scaler_d: xGetScaler
+			},
+			y: {
+				scaled_d: yGetScaled,
+				scaler_d: yGetScaler,
+				range_d: xRange
+			}
+		}
+	} = chart;
 
 	$: console.log('info', $data, $xGetScaler);
 
@@ -44,10 +63,10 @@
 			{#if typeof window !== 'undefined'}
 				<svg class="w-full h-full">
 					<rect x={0} y={0} width={$area_d.width} height={$area_d.height} stroke="blue" fill="none" />
-					<rect x={$area_d.margin.left} y={$area_d.margin.top} width={$area_d.margin.innerWidth} height={$area_d.margin.innerHeight} stroke="blue" fill="none" />
-					<rect x={$area_d.margin.left + $area_d.padding.left} y={$area_d.margin.top + $area_d.padding.top} width={$area_d.padding.innerWidth} height={$area_d.padding.innerHeight} stroke="blue" fill="none" />
+					<rect x={$area_d.margin.left} y={$area_d.margin.top} width={$area_d.margin.inner.width} height={$area_d.margin.inner.height} stroke="blue" fill="none" />
+					<rect x={$area_d.margin.left + $area_d.padding.left} y={$area_d.margin.top + $area_d.padding.top} width={$area_d.padding.inner.width} height={$area_d.padding.inner.height} stroke="blue" fill="none" />
 
-					<g transform="translate({$margin_d.left + $padding_d.left}, {$margin_d.top + $padding_d.top})">
+					<g transform="translate({$area_d.margin.left + $area_d.padding.left}, {$area_d.margin.top + $area_d.padding.top})">
 						{#each $data as row, i}
 							{@const x = $xGetScaled(row)}
 							{@const y0 = $yGetScaler(0)}

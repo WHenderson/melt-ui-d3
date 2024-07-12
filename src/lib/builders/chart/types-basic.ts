@@ -14,12 +14,12 @@ export interface Size {
 
 export interface Area extends Size {
 	padding: Sides & Size & {
-		inner: Size;
-		outer: Size;
+		inner: Sides & Size;
+		outer: Sides & Size;
 	}
 	margin: Sides & Size & {
-		inner: Size;
-		outer: Size;
+		inner: Sides & Size;
+		outer: Sides & Size;
 	}
 }
 

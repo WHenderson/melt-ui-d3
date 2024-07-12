@@ -130,10 +130,10 @@ export function createChart<
 			}
 			
 			const margin_sides: Sides = {
-				top: $margin?.top ?? 0,
-				left: $margin?.left ?? 0,
-				bottom: $margin?.bottom ?? 0,
-				right: $margin?.right ?? 0,
+				top: typeof $margin === 'number' ? $margin : $margin?.top ?? 0,
+				left: typeof $margin === 'number' ? $margin : $margin?.left ?? 0,
+				bottom: typeof $margin === 'number' ? $margin : $margin?.bottom ?? 0,
+				right: typeof $margin === 'number' ? $margin : $margin?.right ?? 0,
 			}
 			
 			const margin_size: Size = {
@@ -141,18 +141,29 @@ export function createChart<
 				height: margin_sides.top + margin_sides.bottom,
 			}
 			
-			const margin_outer: Size = size;
+			const margin_outer: Size & Sides = {
+				...size,
+				left: 0,
+				top: 0,
+				bottom: size.width,
+				right: size.height
+			};
 			
-			const margin_inner: Size = {
+			const margin_inner: Size & Sides = {
 				width: margin_outer.width - margin_size.width,
 				height: margin_outer.height - margin_size.height,
+
+				left: margin_outer.left + margin_sides.left,
+				top: margin_outer.top + margin_sides.top,
+				right: margin_outer.right - margin_sides.right,
+				bottom: margin_outer.bottom - margin_sides.bottom,
 			}
 
 			const padding_sides: Sides = {
-				top: $padding?.top ?? 0,
-				left: $padding?.left ?? 0,
-				bottom: $padding?.bottom ?? 0,
-				right: $padding?.right ?? 0,
+				top: typeof $padding === 'number' ? $padding : $padding?.top ?? 0,
+				left: typeof $padding === 'number' ? $padding : $padding?.left ?? 0,
+				bottom: typeof $padding === 'number' ? $padding : $padding?.bottom ?? 0,
+				right: typeof $padding === 'number' ? $padding : $padding?.right ?? 0,
 			}
 			
 			const padding_size: Size = {
@@ -160,11 +171,16 @@ export function createChart<
 				height: padding_sides.top + padding_sides.bottom,
 			}
 			
-			const padding_outer: Size = margin_inner;
+			const padding_outer: Size & Sides = margin_inner;
 			
-			const padding_inner: Size = {
+			const padding_inner: Size & Sides = {
 				width: padding_outer.width - padding_size.width,
 				height: padding_outer.height - padding_size.height,
+
+				left: padding_outer.left + padding_sides.left,
+				top: padding_outer.top + padding_sides.top,
+				right: padding_outer.right - padding_sides.right,
+				bottom: padding_outer.bottom - padding_sides.bottom,
 			};
 
 			return {
