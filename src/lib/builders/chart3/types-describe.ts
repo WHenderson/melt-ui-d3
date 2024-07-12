@@ -9,9 +9,9 @@ import type {
 	SortFunc,
 } from './types-basic.js';
 
-export type ChartBasics<ROW, META> = {
+export type ChartBasics<ROW> = {
 	data: ROW[];
-	meta?: META;
+	//meta?: META; // A chart should either have meta or not have meta, never either
 	width: number;
 	height: number;
 	margin?: Sides;

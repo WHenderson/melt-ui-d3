@@ -3,7 +3,7 @@ import type { AccessorFunc, DomainField } from './types-basic.js';
 
 export type MaybeStore<TYPE> = TYPE | Readable<TYPE>;
 export type MaybeStores<TYPE> = { [k in keyof TYPE] : k extends 'discrete' ? TYPE[k] : MaybeStore<TYPE[k]> }
-export type Stores<TYPE> = { [k in keyof TYPE] : k extends 'discrete' ? TYPE[k] : Readable<TYPE[k]> }
+export type Stores<TYPE> = { [k in keyof TYPE]-? : k extends 'discrete' ? TYPE[k] : Readable<TYPE[k]> }
 export type StringValue = { toString(): string };
 
 export type InferStoreInner<STORE> =

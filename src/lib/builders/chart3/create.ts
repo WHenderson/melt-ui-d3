@@ -1,6 +1,6 @@
 import type { ChartBasics, DimensionContinuous, DimensionDiscrete } from './types-describe.js';
 import { scalerFactoryBand, scalerFactoryLinear } from './scale.js';
-import { h_continuous } from './describe.js';
+
 import type {
 	InferGeneratorReturn,
 	InferMaybeStoreInner,
@@ -28,7 +28,7 @@ import {
 	createAccumulatorCreatorContinuous,
 	createAccumulatorCreatorDiscrete,
 } from './accumulator.js';
-
+import { h_continuous } from './cardinal.js';
 
 export function createChart<
 	ROW,
@@ -42,12 +42,14 @@ export function createChart<
 	},
 >(
 	props:
-		 MaybeStores<ChartBasics<ROW, META>> &
-		 {
-			 dimensions: DIMENSIONS
-		 }
+		MaybeStores<ChartBasics<ROW>> &
+		{
+			meta?: META | Readable<META>
+			dimensions: DIMENSIONS
+		}
 ):
-	Stores<ChartBasics<ROW, META>> &
+	Stores<ChartBasics<ROW>> &
+	{ meta: Readable<META> } &
 	Stores<ChartBasicsDerived<ROW, META>> &
 	{
 		dimensions: {
@@ -65,7 +67,7 @@ export function createChart<
 {
 	// chart basics
 	const data = makeStore(props.data);
-	const meta = makeStore(props.meta as META);
+	const meta = props.meta ? makeStore(props.meta) : readonly(writable(undefined as META));
 	const width = makeStore(props.width);
 	const height = makeStore(props.height);
 	const padding = makeStore(props.padding);
