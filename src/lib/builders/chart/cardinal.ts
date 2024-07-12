@@ -19,10 +19,12 @@ export const v_range = ({ area }: { area: Area}) => [0, area.padding.inner.heigh
 export const v_band = {
 	discrete: true as const,
 	range: v_range,
+	reverse: true,
 	scalerFactory: scalerFactoryBand<string>
 } as const
 
 export const v_linear = {
 	range: v_range,
+	reverse: true,
 	scalerFactory: scalerFactoryLinear<number>
 } as const

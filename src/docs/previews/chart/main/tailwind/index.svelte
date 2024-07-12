@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createChart, h_band, h_linear } from '$lib/index.js';
+	import { createChart, h_band, h_linear, v_linear } from '$lib/index.js';
 
 	type R = { year: string, apples: number, bananas: number, cherries: number, dates: number }
 	const rdata: R[] = [
@@ -28,7 +28,7 @@
 			y: {
 				accessor: 'apples',
 				domain: [0, null],
-				...h_linear
+				...v_linear
 			}
 		}
 	});
@@ -61,7 +61,7 @@
 </script>
 <div class="w-[600px] h-[400px]">
 	<div bind:clientWidth={$width} bind:clientHeight={$height} class="w-full h-full">
-			{#if typeof window !== 'undefined'}
+			{#if typeof window !== 'undefined' && $width && $height}
 				<svg class="w-full h-full">
 					<rect x={0} y={0} width={$area_d.width} height={$area_d.height} stroke="red" fill="none" stroke-width="3" stroke-dasharray="16 16" />
 					<rect x={$area_d.margin.outer.left} y={$area_d.margin.outer.top} width={$area_d.margin.outer.width} height={$area_d.margin.outer.height} stroke="green" fill="none" stroke-width="3" stroke-dasharray="0 16 0" />

@@ -326,8 +326,7 @@ export function createChart<
 			[range, reverse],
 			([$range, $reverse], set: (value: RangeList<RANGETYPE> | undefined) => void) => {
 
-				const order = <R extends Array<unknown>>(r: R) =>
-					$reverse ? [...r].reverse() as R : r;
+				const order = <R extends Array<unknown>>(r: R) => $reverse ? [...r].reverse() as R : r;
 
 				if (!$range)
 					return set(undefined);
@@ -544,8 +543,6 @@ export function createChart<
 				 $domain_d,
 				 $range_d
 			 ]) => {
-
-				console.log({ $scalerFactory, $meta, $domain_d, $range_d });
 				return $scalerFactory({
 					meta: $meta as never,
 					domain_d: $domain_d,
