@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createChart } from '$lib/index.js';
+	import { createChart, h_band, h_linear } from '$lib/index.js';
 
 	type R = { year: string, apples: number, bananas: number, cherries: number, dates: number }
 	const rdata: R[] = [
@@ -22,12 +22,13 @@
 		margin: 20,
 		dimensions: {
 			x: {
-				ordinal: true,
 				accessor: 'year',
+				...h_band
 			},
 			y: {
 				accessor: 'apples',
-				domain: [0, null]
+				domain: [0, null],
+				...h_linear
 			}
 		}
 	});
@@ -62,11 +63,15 @@
 	<div bind:clientWidth={$width} bind:clientHeight={$height} class="w-full h-full">
 			{#if typeof window !== 'undefined'}
 				<svg class="w-full h-full">
-					<rect x={0} y={0} width={$area_d.width} height={$area_d.height} stroke="blue" fill="none" />
-					<rect x={$area_d.margin.left} y={$area_d.margin.top} width={$area_d.margin.inner.width} height={$area_d.margin.inner.height} stroke="blue" fill="none" />
-					<rect x={$area_d.margin.left + $area_d.padding.left} y={$area_d.margin.top + $area_d.padding.top} width={$area_d.padding.inner.width} height={$area_d.padding.inner.height} stroke="blue" fill="none" />
+					<rect x={0} y={0} width={$area_d.width} height={$area_d.height} stroke="red" fill="none" stroke-width="3" stroke-dasharray="16 16" />
+					<rect x={$area_d.margin.outer.left} y={$area_d.margin.outer.top} width={$area_d.margin.outer.width} height={$area_d.margin.outer.height} stroke="green" fill="none" stroke-width="3" stroke-dasharray="0 16 0" />
 
-					<g transform="translate({$area_d.margin.left + $area_d.padding.left}, {$area_d.margin.top + $area_d.padding.top})">
+					<rect x={$area_d.margin.inner.left} y={$area_d.margin.inner.top} width={$area_d.margin.inner.width} height={$area_d.margin.inner.height} stroke="green" fill="none" stroke-width="3" stroke-dasharray="0 16 0" />
+					<rect x={$area_d.padding.outer.left} y={$area_d.padding.outer.top} width={$area_d.padding.outer.width} height={$area_d.padding.outer.height} stroke="blue" fill="none" stroke-width="3" stroke-dasharray="16 16"  />
+
+					<rect x={$area_d.padding.inner.left} y={$area_d.padding.inner.top} width={$area_d.padding.inner.width} height={$area_d.padding.inner.height} stroke="blue" fill="none" stroke-width="3" stroke-dasharray="16 16"  />
+
+					<g transform="translate({$area_d.padding.inner.left}, {$area_d.padding.inner.top})">
 						{#each $data as row, i}
 							{@const x = $xGetScaled(row)}
 							{@const y0 = $yGetScaler(0)}

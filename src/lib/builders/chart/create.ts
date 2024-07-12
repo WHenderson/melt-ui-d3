@@ -544,6 +544,8 @@ export function createChart<
 				 $domain_d,
 				 $range_d
 			 ]) => {
+
+				console.log({ $scalerFactory, $meta, $domain_d, $range_d });
 				return $scalerFactory({
 					meta: $meta as never,
 					domain_d: $domain_d,
