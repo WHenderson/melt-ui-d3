@@ -8,27 +8,32 @@ export function scalerFactoryBand<DOMAINTYPE extends StringValue = string>(
 		range_d
 	}: {
 		domain_d: DomainDiscreteSet<DOMAINTYPE>,
-		range_d: RangeList<number>
+		range_d: RangeList<number> | undefined
 	}
 ) {
 	const scale = scaleBand<DOMAINTYPE>()
-		.domain(domain_d)
-		.range(range_d);
+		.domain(domain_d);
+
+	if (range_d)
+		scale.range(range_d);
 
 	return scale as (typeof scale & Scaler<DOMAINTYPE, number>);
 }
+
 export function scalerFactoryLinear<DOMAINTYPE extends NumberValue>(
 	{
 		domain_d,
 		range_d
 	}: {
 		domain_d: DomainContinuousBound<DOMAINTYPE>,
-		range_d: RangeList<number>
+		range_d: RangeList<number> | undefined
 	}
 ) {
 	const scale = scaleLinear<number>()
-		.domain(domain_d)
-		.range(range_d);
+		.domain(domain_d);
+
+	if (range_d)
+		scale.range(range_d);
 
 	return scale as (typeof scale & Scaler<DOMAINTYPE, number>);
 }
@@ -39,12 +44,14 @@ export function scalerFactorySqrt<DOMAINTYPE extends NumberValue>(
 		range_d
 	}: {
 		domain_d: DomainContinuousBound<DOMAINTYPE>,
-		range_d: RangeList<number>
+		range_d: RangeList<number> | undefined
 	}
 ) {
 	const scale = scaleSqrt<number>()
-		.domain(domain_d)
-		.range(range_d);
+		.domain(domain_d);
+
+	if (range_d)
+		scale.range(range_d);
 
 	return scale as (typeof scale & Scaler<DOMAINTYPE, number>);
 }

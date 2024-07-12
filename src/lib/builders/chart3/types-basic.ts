@@ -1,3 +1,6 @@
+import type { ReplaceLeafType } from './types-util.js';
+import type { Readable } from 'svelte/store';
+
 export interface Sides {
 	top: number;
 	left: number;
@@ -11,11 +14,11 @@ export interface Size {
 }
 
 export interface Area extends Size {
-	padding: Sides & {
+	padding: Sides & Size & {
 		inner: Size;
 		outer: Size;
 	}
-	margin: Sides & {
+	margin: Sides & Size & {
 		inner: Size;
 		outer: Size;
 	}
@@ -23,8 +26,8 @@ export interface Area extends Size {
 
 export type DomainField<DOMAINTYPE> = DomainFieldSingle<DOMAINTYPE> | DomainFieldArray<DOMAINTYPE> | DomainFieldRecord<DOMAINTYPE>;
 export type DomainFieldSingle<DOMAINTYPE> = DOMAINTYPE;
-export type DomainFieldArray<DOMAINTYPE> = DOMAINTYPE[];
-export type DomainFieldRecord<DOMAINTYPE> = { [key: string]: DOMAINTYPE };
+export type DomainFieldArray<DOMAINTYPE> = DomainField<DOMAINTYPE>[];
+export type DomainFieldRecord<DOMAINTYPE> = { [key: string]: DomainField<DOMAINTYPE> };
 
 export type AccessorKey<ROW> = keyof ROW;
 export type AccessorFunc<ROW, META, DOMAINTYPE> = (row: ROW, info: { meta: META }) => DomainField<DOMAINTYPE>;
@@ -59,6 +62,12 @@ export type SortFunc<DOMAINTYPE> = (a: DOMAINTYPE, b: DOMAINTYPE) => number;
 
 export type Scaler<DOMAINTYPE, RANGETYPE> = (value: DOMAINTYPE) => RANGETYPE;
 
-export type ScalerFactoryDiscrete<DOMAINTYPE, RANGETYPE, META, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> = (info: { meta: META, domain_d: DomainDiscreteSet<DOMAINTYPE>, range_d: RangeList<RANGETYPE> }) => SCALER;
-export type ScalerFactoryContinuous<DOMAINTYPE, RANGETYPE, META, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> = (info: { meta: META, domain_d: DomainContinuousBound<DOMAINTYPE>, range_d: RangeList<RANGETYPE> }) => SCALER;
+export type ScalerFactoryDiscrete<DOMAINTYPE, RANGETYPE, META, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> = (info: { meta: META, domain_d: DomainDiscreteSet<DOMAINTYPE>, range_d: RangeList<RANGETYPE> | undefined }) => SCALER;
+export type ScalerFactoryContinuous<DOMAINTYPE, RANGETYPE, META, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> = (info: { meta: META, domain_d: DomainContinuousBound<DOMAINTYPE>, range_d: RangeList<RANGETYPE> | undefined }) => SCALER;
 
+export type AccessorScaledOutput<ROW,META,DOMAINTYPE, RANGETYPE,ACCESSOR> =
+	ACCESSOR extends AccessorFunc<ROW, META, DOMAINTYPE>
+		? (row: ROW, info: { meta: META }) => ReplaceLeafType<ReturnType<ACCESSOR>, DOMAINTYPE, RANGETYPE>
+		: ACCESSOR extends keyof ROW
+		? (row: ROW, info: { meta: META }) => ReplaceLeafType<ROW[ACCESSOR], DOMAINTYPE, RANGETYPE>
+		: never;
