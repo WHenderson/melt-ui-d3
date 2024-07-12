@@ -31,3 +31,9 @@ export type InferAccessorReturn<ROW, META, ACCESSOR> =
 		: InferMaybeStoreInner<ACCESSOR> extends keyof ROW
 		? ROW[InferMaybeStoreInner<ACCESSOR>]
 		: never
+
+export type MarkPartial<OBJECT,MEMBERS extends keyof OBJECT> =
+	Omit<OBJECT, MEMBERS> &
+	Partial<Pick<OBJECT, MEMBERS>>;
+
+export type InferGeneratorReturn<GENERATOR> = GENERATOR extends Generator<any, infer R, any> ? R : never;

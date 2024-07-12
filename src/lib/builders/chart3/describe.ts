@@ -19,7 +19,7 @@ export const h_discrete = {
 
 export const h_continuous = {
 	range: h_range,
-	extentDefault: 0,
+	extentsDefault: [0,0] as [number, number],
 	scalerFactory: scalerFactoryLinear
 }
 
@@ -32,7 +32,7 @@ export const v_discrete = {
 
 export const v_continuous = {
 	range: v_range,
-	extentDefault: 0,
+	extentDefault: [0, 0],
 	scalerFactory: scalerFactoryLinear
 }
 
