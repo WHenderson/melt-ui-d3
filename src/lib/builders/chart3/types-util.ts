@@ -1,5 +1,4 @@
 import type { Readable } from 'svelte/store';
-import type { AccessorFunc, DomainField } from './types-basic.js';
 
 export type MaybeStore<TYPE> = TYPE | Readable<TYPE>;
 export type MaybeStores<TYPE> = { [k in keyof TYPE] : k extends 'discrete' ? TYPE[k] : MaybeStore<TYPE[k]> }
@@ -36,6 +35,7 @@ export type MarkPartial<OBJECT,MEMBERS extends keyof OBJECT> =
 	Omit<OBJECT, MEMBERS> &
 	Partial<Pick<OBJECT, MEMBERS>>;
 
+// TODO: Use these to avoid retrying in create
 export type InferGeneratorReturn<GENERATOR> = GENERATOR extends Generator<any, infer R, any> ? R : never;
-export type InferGeneratorYield<GENERATOR> = GENERATOR extends Generator<infer Y, any, any> ? R : never;
+export type InferGeneratorYield<GENERATOR> = GENERATOR extends Generator<infer Y, any, any> ? Y : never;
 export type InferGeneratorReceive<GENERATOR> = GENERATOR extends Generator<any, any, infer R> ? R : never;

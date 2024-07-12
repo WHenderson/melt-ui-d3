@@ -5,7 +5,7 @@ import type {
 	InferGeneratorReturn,
 	InferMaybeStoreInner,
 	InferStoreInner,
-	MarkPartial,
+	MarkPartial, MaybeStore,
 	MaybeStores,
 	Stores,
 	StringValue,
@@ -53,15 +53,34 @@ export function createChart<
 	Stores<ChartBasicsDerived<ROW, META>> &
 	{
 		dimensions: {
-			[k in keyof DIMENSIONS]: DIMENSIONS[k] extends MaybeStores<DimensionDiscrete<ROW, META, infer DOMAINTYPE, infer RANGETYPE, infer DOMAINSIMPLETYPE, infer SCALER>>
-				? Stores<DimensionDiscrete<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>>
-				& Stores<DimensionDiscreteDerived<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>>
-				& { scaled_d: Readable<AccessorScaledOutput<ROW, META, DOMAINTYPE, RANGETYPE, InferMaybeStoreInner<DIMENSIONS[k]['accessor']>>>, s: SCALER, dt: DOMAINTYPE, rt: RANGETYPE, sdt: DOMAINSIMPLETYPE }
-				: DIMENSIONS[k] extends MaybeStores<DimensionContinuous<ROW, META, infer DOMAINTYPE, infer RANGETYPE, infer DOMAINSIMPLETYPE, infer SCALER>>
-				? Stores<DimensionContinuous<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>>
-				& Stores<DimensionContinuousDerived<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>>
-				& { scaled_d: Readable<AccessorScaledOutput<ROW, META, DOMAINTYPE, RANGETYPE, InferMaybeStoreInner<DIMENSIONS[k]['accessor']>>> }
-				: never;
+			[k in keyof DIMENSIONS]: (
+					DIMENSIONS[k] extends MaybeStores<DimensionDiscrete<ROW, META, infer DOMAINTYPE, infer RANGETYPE, infer DOMAINSIMPLETYPE, infer SCALER>>
+					? Stores<DimensionDiscrete<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>>
+					& Stores<DimensionDiscreteDerived<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>>
+					& { scaled_d: Readable<AccessorScaledOutput<ROW, META, DOMAINTYPE, RANGETYPE, InferMaybeStoreInner<DIMENSIONS[k]['accessor']>>> }
+					: DIMENSIONS[k] extends MaybeStores<DimensionContinuous<ROW, META, infer DOMAINTYPE, infer RANGETYPE, infer DOMAINSIMPLETYPE, infer SCALER>>
+					? Stores<DimensionContinuous<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>>
+					& Stores<DimensionContinuousDerived<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>>
+					& { scaled_d: Readable<AccessorScaledOutput<ROW, META, DOMAINTYPE, RANGETYPE, InferMaybeStoreInner<DIMENSIONS[k]['accessor']>>> }
+					: never
+				) &
+				{
+					// maintain correct return type for accessor
+					accessor_d:
+						DIMENSIONS[k]['accessor'] extends keyof ROW
+						? Readable<(row: ROW, info: { meta: META }) => ROW[DIMENSIONS[k]['accessor']]>
+						: DIMENSIONS[k]['accessor'] extends (row: ROW, info: { meta: META }) => infer DT
+						? Readable<(row: ROW, info: { meta: META }) => DT>
+						: DIMENSIONS[k]['accessor'] extends Readable<infer ACCESSOR>
+						? (
+							ACCESSOR extends keyof ROW
+							? Readable<(row: ROW, info: { meta: META }) => ROW[ACCESSOR]>
+							: ACCESSOR extends (row: ROW, info: { meta: META }) => infer DT
+							? Readable<(row: ROW, info: { meta: META }) => DT>
+							: never
+						)
+						: never
+				};
 		}
 	}
 {
