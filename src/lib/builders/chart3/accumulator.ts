@@ -1,9 +1,4 @@
-import type {
-	DomainContinuousBound,
-	DomainContinuousOptionalBound,
-	DomainDiscreteSet,
-	DomainField, ExtentsContinuousBound, ExtentsDiscrete, ExtentsDiscreteSet,
-} from './types-basic.js';
+import type { DomainField, ExtentsContinuousBound, ExtentsDiscreteSet } from './types-basic.js';
 
 export interface Accumulator<ROW, META, EXTENTS> {
 	accumulate: (row: ROW, info: { meta: META }) => void;

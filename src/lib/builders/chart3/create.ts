@@ -1,23 +1,16 @@
 import type { ChartBasics, DimensionContinuous, DimensionDiscrete } from './types-describe.js';
-import { scalerFactoryBand, scalerFactoryLinear } from './scale.js';
-
-import type {
-	InferGeneratorReturn,
-	InferMaybeStoreInner,
-	InferStoreInner,
-	MarkPartial, MaybeStore,
-	MaybeStores,
-	Stores,
-	StringValue,
-} from './types-util.js';
-import { makeStore } from '../chart/util.js';
+import type { InferGeneratorReturn, InferMaybeStoreInner, MaybeStores, ReplaceLeafType, Stores } from './types-util.js';
 import type { ChartBasicsDerived, DimensionContinuousDerived, DimensionDiscreteDerived } from './types-create.js';
 import type {
 	AccessorFunc,
-	AccessorScaledOutput, DomainContinuousBound,
+	AccessorScaledOutput,
+	DomainContinuousBound,
 	DomainDiscreteArray,
-	DomainDiscreteSet, DomainField, ExtentsContinuousBound, ExtentsDiscrete,
-	ExtentsDiscreteSet, RangeList,
+	DomainDiscreteSet,
+	DomainField,
+	ExtentsContinuousBound,
+	ExtentsDiscreteSet,
+	RangeList,
 	Scaler,
 	Sides,
 	Size,
@@ -28,7 +21,8 @@ import {
 	createAccumulatorCreatorContinuous,
 	createAccumulatorCreatorDiscrete,
 } from './accumulator.js';
-import { h_continuous } from './cardinal.js';
+import { makeStore, tuple } from './util.js';
+import { Replace } from 'lucide-svelte';
 
 export function createChart<
 	ROW,
@@ -78,6 +72,40 @@ export function createChart<
 							: ACCESSOR extends (row: ROW, info: { meta: META }) => infer DT
 							? Readable<(row: ROW, info: { meta: META }) => DT>
 							: never
+						)
+						: never
+					scaled_d:
+						DIMENSIONS[k] extends MaybeStores<DimensionDiscrete<ROW, META, any, infer RANGETYPE, any, any>>
+						? (
+								DIMENSIONS[k]['accessor'] extends keyof ROW
+								? Readable<(row: ROW, info: { meta: META }) => ReplaceLeafType<ROW[DIMENSIONS[k]['accessor']], RANGETYPE>>
+								: DIMENSIONS[k]['accessor'] extends (row: ROW, info: { meta: META }) => infer DT
+								? Readable<(row: ROW, info: { meta: META }) => ReplaceLeafType<DT, RANGETYPE>>
+								: DIMENSIONS[k]['accessor'] extends Readable<infer ACCESSOR>
+								? (
+									ACCESSOR extends keyof ROW
+									? Readable<(row: ROW, info: { meta: META }) => ReplaceLeafType<ROW[ACCESSOR], RANGETYPE>>
+									: ACCESSOR extends (row: ROW, info: { meta: META }) => infer DT
+									? Readable<(row: ROW, info: { meta: META }) => ReplaceLeafType<DT, RANGETYPE>>
+									: never
+								)
+								: never
+						)
+						: DIMENSIONS[k] extends MaybeStores<DimensionContinuous<ROW, META, any, infer RANGETYPE, any, any>>
+						? (
+								DIMENSIONS[k]['accessor'] extends keyof ROW
+								? Readable<(row: ROW, info: { meta: META }) => ReplaceLeafType<ROW[DIMENSIONS[k]['accessor']], RANGETYPE>>
+								: DIMENSIONS[k]['accessor'] extends (row: ROW, info: { meta: META }) => infer DT
+								? Readable<(row: ROW, info: { meta: META }) => ReplaceLeafType<DT, RANGETYPE>>
+								: DIMENSIONS[k]['accessor'] extends Readable<infer ACCESSOR>
+								? (
+									ACCESSOR extends keyof ROW
+									? Readable<(row: ROW, info: { meta: META }) => ReplaceLeafType<ROW[ACCESSOR], RANGETYPE>>
+									: ACCESSOR extends (row: ROW, info: { meta: META }) => infer DT
+									? Readable<(row: ROW, info: { meta: META }) => ReplaceLeafType<DT, RANGETYPE>>
+									: never
+								)
+								: never
 						)
 						: never
 				};
@@ -547,8 +575,6 @@ export function createChart<
 		}
 	}
 
-	const tuple = <T extends any[]>(...args: T): T => args;
-
 	const dimensionNames = Object
 		.keys(props.dimensions);
 
@@ -618,40 +644,3 @@ export function createChart<
 		)) as never,
 	};
 }
-
-const r = createChart({
-	data: [{y:'1',a:1}, {y:'2',a:2}],
-	meta: { meta: 'val'},
-	width: 10,
-	height: 12,
-	dimensions: {
-		x: {
-			discrete: true,
-			accessor: 'y',
-			scalerFactory: scalerFactoryBand //(props) => (d: string) => 'woot'
-		},
-		y: {
-			accessor: 'a',
-			...h_continuous
-		},
-		complex: {
-			discrete: true,
-			accessor: row => ({ a: 1, b: 2, c: [3,4,5] }),
-			scalerFactory: scalerFactoryBand
-		}
-	}
-})
-
-const x = r.dimensions.x;
-const y = r.dimensions.y;
-const complex = r.dimensions.complex;
-
-
-const xscaler = x.scaler_d
-const scaler = scalerFactoryBand<StringValue>;
-
-const xs = x.s;
-
-type R = ReturnType<InferStoreInner<(typeof complex)['scaled_d']>>;
-const ret: R = {  a: 1, b: 2, c: [3,4,5] };
-const ret2: R = 1;

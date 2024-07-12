@@ -1,5 +1,4 @@
 import type { ReplaceLeafType } from './types-util.js';
-import type { Readable } from 'svelte/store';
 
 export interface Sides {
 	top: number;
@@ -67,7 +66,7 @@ export type ScalerFactoryContinuous<DOMAINTYPE, RANGETYPE, META, SCALER extends 
 
 export type AccessorScaledOutput<ROW,META,DOMAINTYPE, RANGETYPE,ACCESSOR> =
 	ACCESSOR extends AccessorFunc<ROW, META, DOMAINTYPE>
-		? (row: ROW, info: { meta: META }) => ReplaceLeafType<ReturnType<ACCESSOR>, DOMAINTYPE, RANGETYPE>
+		? (row: ROW, info: { meta: META }) => ReplaceLeafType<ReturnType<ACCESSOR>, RANGETYPE>
 		: ACCESSOR extends keyof ROW
-		? (row: ROW, info: { meta: META }) => ReplaceLeafType<ROW[ACCESSOR], DOMAINTYPE, RANGETYPE>
+		? (row: ROW, info: { meta: META }) => ReplaceLeafType<ROW[ACCESSOR], RANGETYPE>
 		: never;

@@ -15,14 +15,14 @@ export type InferMaybeStoreInner<MAYBESTORE> =
 		? INNER
 		: MAYBESTORE;
 
-export type ReplaceLeafType<TYPE, FROM, TO> =
-	TYPE extends Array<infer ELEMENT>
-	? Array<ReplaceLeafType<ELEMENT, FROM, TO>>
+export type ReplaceLeafType<TYPE, TO> =
+	TYPE extends [...infer ELEMENTS]
+	? { [K in keyof TYPE]: ReplaceLeafType<TYPE[K], TO> }
+	: TYPE extends Array<infer ELEMENT>
+	? Array<ReplaceLeafType<ELEMENT, TO>>
 	: TYPE extends Record<string, infer MEMBER>
-	? { [k in keyof TYPE]: ReplaceLeafType<TYPE[k], FROM, TO> }
-	: TYPE extends FROM
-	? TO
-	: never;
+	? { [k in keyof TYPE]: ReplaceLeafType<TYPE[k], TO> }
+	: TO;
 
 export type InferAccessorReturn<ROW, META, ACCESSOR> =
 	InferMaybeStoreInner<ACCESSOR> extends (row: ROW, info: { meta: META }) => infer R

@@ -1,13 +1,13 @@
 import type {
-	Accessor,
-	AccessorFunc, AccessorScaledOutput,
-	Area, DomainContinuous, DomainContinuousBound,
-	DomainDiscrete, DomainDiscreteSet, ExtentsContinuous, ExtentsContinuousBound,
-	ExtentsDiscrete, ExtentsDiscreteSet,
-	Range, RangeList,
-	Reverse,
-	Scaler, ScalerFactoryContinuous, ScalerFactoryDiscrete,
-	Sides, SortFunc,
+	AccessorFunc,
+	AccessorScaledOutput,
+	Area,
+	DomainContinuousBound,
+	DomainDiscreteSet,
+	ExtentsContinuousBound,
+	ExtentsDiscreteSet,
+	RangeList,
+	Scaler,
 } from './types-basic.js';
 
 export type ChartBasicsDerived<ROW, META> = {
