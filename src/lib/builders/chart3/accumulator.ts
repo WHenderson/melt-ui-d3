@@ -39,7 +39,7 @@ export function createAccumulatorCreatorDiscrete<ROW, META, DOMAINTYPE>(accessor
 	}
 }
 
-export function createAccumulatorCreatorContinuous<ROW, META, DOMAINTYPE>(accessor: ((row: ROW, info: { meta: META }) => DomainField<DOMAINTYPE>), extentsDefault: ExtentsContinuousBound<DOMAINTYPE>) : AccumulatorCreator<ROW, META, ExtentsContinuousBound<DOMAINTYPE>> {
+export function createAccumulatorCreatorContinuous<ROW, META, DOMAINTYPE>(accessor: ((row: ROW, info: { meta: META }) => DomainField<DOMAINTYPE>), extentsDefault: undefined | ExtentsContinuousBound<DOMAINTYPE>) : AccumulatorCreator<ROW, META, undefined | ExtentsContinuousBound<DOMAINTYPE>> {
 	return () => {
 		let extents: undefined | [DOMAINTYPE, DOMAINTYPE] = undefined;
 

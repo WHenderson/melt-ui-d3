@@ -343,13 +343,13 @@ export function createChart<
 	)
 		: Generator<
 		// yield
-		Readable<ExtentsContinuousBound<DOMAINTYPE> | AccumulatorCreator<ROW, META, ExtentsContinuousBound<DOMAINTYPE>>>,
+		Readable<undefined | ExtentsContinuousBound<DOMAINTYPE> | AccumulatorCreator<ROW, META, undefined | ExtentsContinuousBound<DOMAINTYPE>>>,
 		// return
 		Stores<DimensionContinuous<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>> &
 		Stores<DimensionContinuousDerived<ROW, META, DOMAINTYPE, RANGETYPE, DOMAINSIMPLETYPE, SCALER>> &
 		{ scaled_d: Readable<AccessorFunc<ROW, META, RANGETYPE>> },
 		// receive
-		Readable<ExtentsContinuousBound<DOMAINTYPE>>
+		Readable<undefined | ExtentsContinuousBound<DOMAINTYPE>>
 	>
 	{
 		const accessor = makeStore(props.accessor);
@@ -372,7 +372,7 @@ export function createChart<
 
 		const checker = derived(
 			[accessor_d, extents, extentsDefault],
-			([$accessor_d, $extents, $extentsDefault], set: ((value: ExtentsContinuousBound<DOMAINTYPE> | AccumulatorCreator<ROW, META, ExtentsContinuousBound<DOMAINTYPE>>) => void)) => {
+			([$accessor_d, $extents, $extentsDefault], set: ((value: undefined | ExtentsContinuousBound<DOMAINTYPE> | AccumulatorCreator<ROW, META, undefined | ExtentsContinuousBound<DOMAINTYPE>>) => void)) => {
 
 				if (typeof $extents === 'function') {
 					return meta.subscribe($meta => {
@@ -402,7 +402,7 @@ export function createChart<
 
 		const extents_d = derived(
 			checker,
-			($checker, set: ((value: ExtentsContinuousBound<DOMAINTYPE>) => void)) => {
+			($checker, set: ((value: undefined | ExtentsContinuousBound<DOMAINTYPE>) => void)) => {
 				if (typeof $checker === 'function') {
 					return found_extents.subscribe(
 						$found_extents =>
@@ -417,7 +417,7 @@ export function createChart<
 
 		const domain_d = derived(
 			[extents_d, domain],
-			([$extents_d, $domain], set: ((value: DomainContinuousBound<DOMAINTYPE>) => void)) => {
+			([$extents_d, $domain], set: ((value: undefined | DomainContinuousBound<DOMAINTYPE>) => void)) => {
 
 				if (!$domain)
 					return set($extents_d);
@@ -429,11 +429,19 @@ export function createChart<
 						if (!domain)
 							return set($extents_d);
 
-						return set([domain[0] ?? $extents_d[0], domain[1] ?? $extents_d[1]]);
+						const combined = tuple(domain[0] ?? $extents_d?.[0], domain[1] ?? $extents_d?.[1]);
+						if (combined[0] === undefined || combined[1] === undefined)
+							return set(undefined);
+
+						return set(combined as DomainContinuousBound<DOMAINTYPE>);
 					})
 				}
 
-				return set([$domain[0] ?? $extents_d[0], $domain[1] ?? $extents_d[1]]);
+				const combined = tuple($domain[0] ?? $extents_d?.[0], $domain[1] ?? $extents_d?.[1]);
+				if (combined[0] === undefined || combined[1] === undefined)
+					return set(undefined);
+
+				return set(combined as DomainContinuousBound<DOMAINTYPE>);
 			}
 		);
 

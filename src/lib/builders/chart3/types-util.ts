@@ -37,3 +37,5 @@ export type MarkPartial<OBJECT,MEMBERS extends keyof OBJECT> =
 	Partial<Pick<OBJECT, MEMBERS>>;
 
 export type InferGeneratorReturn<GENERATOR> = GENERATOR extends Generator<any, infer R, any> ? R : never;
+export type InferGeneratorYield<GENERATOR> = GENERATOR extends Generator<infer Y, any, any> ? R : never;
+export type InferGeneratorReceive<GENERATOR> = GENERATOR extends Generator<any, any, infer R> ? R : never;

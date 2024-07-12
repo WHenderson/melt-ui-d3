@@ -25,12 +25,14 @@ export function scalerFactoryLinear<DOMAINTYPE extends NumberValue>(
 		domain_d,
 		range_d
 	}: {
-		domain_d: DomainContinuousBound<DOMAINTYPE>,
+		domain_d: DomainContinuousBound<DOMAINTYPE> | undefined,
 		range_d: RangeList<number> | undefined
 	}
 ) {
-	const scale = scaleLinear<number>()
-		.domain(domain_d);
+	const scale = scaleLinear<number>();
+
+	if (domain_d)
+		scale.domain(domain_d);
 
 	if (range_d)
 		scale.range(range_d);
@@ -43,12 +45,14 @@ export function scalerFactorySqrt<DOMAINTYPE extends NumberValue>(
 		domain_d,
 		range_d
 	}: {
-		domain_d: DomainContinuousBound<DOMAINTYPE>,
+		domain_d: DomainContinuousBound<DOMAINTYPE> | undefined,
 		range_d: RangeList<number> | undefined
 	}
 ) {
-	const scale = scaleSqrt<number>()
-		.domain(domain_d);
+	const scale = scaleSqrt<number>();
+
+	if (domain_d)
+		scale.domain(domain_d);
 
 	if (range_d)
 		scale.range(range_d);

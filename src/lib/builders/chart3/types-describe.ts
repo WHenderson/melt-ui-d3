@@ -51,7 +51,7 @@ export type DimensionContinuousPartial<META, DOMAINTYPE extends DOMAINSIMPLETYPE
 		range?: Range<RANGETYPE, META>;
 		reverse?: Reverse<META>;
 		extents?: ExtentsContinuous<DOMAINTYPE, META>;
-		extentsDefault: ExtentsContinuousBound<DOMAINTYPE>;
+		extentsDefault?: ExtentsContinuousBound<DOMAINTYPE>;
 		domain?: DomainContinuous<DOMAINTYPE, META>;
 		scalerFactory: ScalerFactoryContinuous<DOMAINSIMPLETYPE, RANGETYPE, META, SCALER>;
 	}
@@ -63,7 +63,7 @@ export type DimensionContinuous<ROW, META, DOMAINTYPE extends DOMAINSIMPLETYPE, 
 		range?: Range<RANGETYPE, META>;
 		reverse?: Reverse<META>;
 		extents?: ExtentsContinuous<DOMAINTYPE, META>;
-		extentsDefault: ExtentsContinuousBound<DOMAINTYPE>;
+		extentsDefault?: ExtentsContinuousBound<DOMAINTYPE>;
 		domain?: DomainContinuous<DOMAINTYPE, META>;
 		scalerFactory: ScalerFactoryContinuous<DOMAINSIMPLETYPE, RANGETYPE, META, SCALER>;
 	}

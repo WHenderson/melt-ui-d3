@@ -53,9 +53,9 @@ export type DomainDiscreteArray<DOMAINTYPE> = DOMAINTYPE[];
 export type DomainDiscreteSet<DOMAINTYPE> = ReadonlySet<DOMAINTYPE>;
 export type DomainDiscreteFunc<DOMAINTYPE, META> = (extents: ExtentsDiscreteSet<DOMAINTYPE>, info: { meta: META }) => (DomainDiscreteArray<DOMAINTYPE> | DomainDiscreteSet<DOMAINTYPE> | undefined);
 export type DomainDiscrete<DOMAINTYPE, META> = DomainDiscreteArray<DOMAINTYPE> | DomainDiscreteSet<DOMAINTYPE> | DomainDiscreteFunc<DOMAINTYPE, META>;
-export type DomainContinuousOptionalBound<DOMAINTYPE> = [DOMAINTYPE | null, DOMAINTYPE | null];
+export type DomainContinuousOptionalBound<DOMAINTYPE> = [DOMAINTYPE | undefined | null, DOMAINTYPE | undefined | null];
 export type DomainContinuousBound<DOMAINTYPE> = [DOMAINTYPE, DOMAINTYPE];
-export type DomainContinuousFunc<DOMAINTYPE, META> = (extents: ExtentsContinuousBound<DOMAINTYPE>, info: { meta: META }) => (DomainContinuousOptionalBound<DOMAINTYPE> | DomainContinuousBound<DOMAINTYPE> | undefined);
+export type DomainContinuousFunc<DOMAINTYPE, META> = (extents: undefined | ExtentsContinuousBound<DOMAINTYPE>, info: { meta: META }) => (DomainContinuousOptionalBound<DOMAINTYPE> | DomainContinuousBound<DOMAINTYPE> | undefined);
 export type DomainContinuous<DOMAINTYPE, META> = DomainContinuousOptionalBound<DOMAINTYPE> | DomainContinuousBound<DOMAINTYPE> | DomainContinuousFunc<DOMAINTYPE, META>;
 
 export type SortFunc<DOMAINTYPE> = (a: DOMAINTYPE, b: DOMAINTYPE) => number;
@@ -63,7 +63,7 @@ export type SortFunc<DOMAINTYPE> = (a: DOMAINTYPE, b: DOMAINTYPE) => number;
 export type Scaler<DOMAINTYPE, RANGETYPE> = (value: DOMAINTYPE) => RANGETYPE;
 
 export type ScalerFactoryDiscrete<DOMAINTYPE, RANGETYPE, META, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> = (info: { meta: META, domain_d: DomainDiscreteSet<DOMAINTYPE>, range_d: RangeList<RANGETYPE> | undefined }) => SCALER;
-export type ScalerFactoryContinuous<DOMAINTYPE, RANGETYPE, META, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> = (info: { meta: META, domain_d: DomainContinuousBound<DOMAINTYPE>, range_d: RangeList<RANGETYPE> | undefined }) => SCALER;
+export type ScalerFactoryContinuous<DOMAINTYPE, RANGETYPE, META, SCALER extends Scaler<DOMAINTYPE, RANGETYPE>> = (info: { meta: META, domain_d: undefined | DomainContinuousBound<DOMAINTYPE>, range_d: RangeList<RANGETYPE> | undefined }) => SCALER;
 
 export type AccessorScaledOutput<ROW,META,DOMAINTYPE, RANGETYPE,ACCESSOR> =
 	ACCESSOR extends AccessorFunc<ROW, META, DOMAINTYPE>

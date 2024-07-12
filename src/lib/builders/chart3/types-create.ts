@@ -34,7 +34,7 @@ export type DimensionContinuousDerived<ROW, META, DOMAINTYPE extends DOMAINSIMPL
 		discrete: false;
 		accessor_d: AccessorFunc<ROW, META, DOMAINTYPE>;
 		range_d: RangeList<RANGETYPE> | undefined;
-		extents_d: ExtentsContinuousBound<DOMAINTYPE>;
-		domain_d: DomainContinuousBound<DOMAINTYPE>;
+		extents_d: undefined | ExtentsContinuousBound<DOMAINTYPE>;
+		domain_d: undefined | DomainContinuousBound<DOMAINTYPE>;
 		scaler_d: SCALER;
 	}
