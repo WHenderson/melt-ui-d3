@@ -52,12 +52,6 @@
 		}
 	} = chart;
 
-	$: console.log('info', $data, $xGetScaler);
-
-	/**
-	 * TODO:
-	 *  Add margins and padd, use g and transform to place into correct location...
-	 */
 </script>
 <div class="w-[600px] h-[400px]">
 	<div bind:clientWidth={$width} bind:clientHeight={$height} class="w-full h-full">
